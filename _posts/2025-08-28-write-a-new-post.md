@@ -7,8 +7,4 @@ tags: [writing]
 render_with_liquid: false
 ---
 
-## Dark Soul3 Cheat Engine Table
-
-
-
 [DarkSoul3.CT](/assets/CheatEngineTable/DarkSoulsIII.CT)

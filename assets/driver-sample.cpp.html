@@ -1,0 +1,2471 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="driver-sample.cpp_files/new.css">
+<title>driver.cpp</title>
+<style>
+  .vt-augment {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .vt-augment.drawer {
+    display: none;
+    width: 700px;
+    background: white;
+    border: 1px solid #e6e6e6;
+    text-align: left;
+    z-index: 102;
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    box-shadow: -4px 5px 8px -3px rgba(17, 17, 17, .16);
+    animation: slideToRight 0.5s 1 forwards;
+    transform: translateX(100vw);
+  }
+  .vt-augment.drawer[opened] {
+    display: flex;
+    animation: slideFromRight 0.2s 1 forwards;
+  }
+  .vt-augment > .spinner {
+    position: absolute;
+    z-index: 199;
+    top: calc(50% - 50px);
+    left: calc(50% - 50px);
+    border: 8px solid rgba(0, 0, 0, 0.2);
+    border-left-color: white;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1.2s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes slideFromRight {
+    0% {
+      transform: translateX(100vw);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  @keyframes slideToRight {
+    100% {
+      transform: translateX(100vw);
+      display: none;
+    }
+  }
+  @media screen and (max-width: 700px) {
+    .vt-augment.drawer {
+      width: 100%;
+    }
+  }
+</style></head>
+
+<body>
+
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/2021/summer/cs280/project1-objectallocator/ObjectAllocator.h.html">ObjectAllocator.h</a><br>
+
+<pre class="sourcecode"><code>
+<font color="990099">#include &lt;iostream&gt; </font>
+<font color="990099">#include &lt;cstdio&gt;</font>
+<font color="990099">#include &lt;cstring&gt;</font>
+<font color="990099">#include &lt;cstdlib&gt;</font>
+
+<b>using</b> std::cout;
+<b>using</b> std::endl;
+<b>using</b> std::printf;
+
+<b>int</b> SHOWADDRESS1 = 0;    <font color="#003399"><i>// DumpCallback</i></font>
+<b>int</b> SHOWADDRESS2 = 0;    <font color="#003399"><i>// ValidateCallback</i></font>
+<b>int</b> SHOWREAL = 0;        <font color="#003399"><i>// DumpPages, DumpPagesEx</i></font>
+<b>int</b> SHOW_EXCEPTIONS = 0; <font color="#003399"><i>// Show student exceptions in all tests</i></font>
+<b>int</b> EXTRA_CREDIT = 0;    <font color="#003399"><i>// Run extra credit tests (Alignment, FreeEmptyPages)</i></font>
+
+<font color="990099">#include "ObjectAllocator.h"</font>
+<font color="990099">#include "PRNG.h"</font>
+
+<b>struct</b> Student
+{
+  <b>int</b> Age;       
+  <b>float</b> GPA;
+  <b>long</b> Year;
+  <b>long</b> ID;  
+};
+
+<b>struct</b> Employee
+{
+  Employee *Next;
+  <b>char</b> lastName[12];
+  <b>char</b> firstName[12];
+  <b>float</b> salary;
+  <b>int</b> years;
+};
+
+
+ObjectAllocator *studentObjectMgr;
+ObjectAllocator *employeeObjectMgr;
+
+<font color="#003399"><i>// Support functions</i></font>
+<b>void</b> PrintCounts(<b>const</b> ObjectAllocator *nm);
+<b>void</b> PrintCounts2(<b>const</b> ObjectAllocator *nm);
+<b>void</b> PrintConfig(<b>const</b> ObjectAllocator *nm);
+<b>void</b> DumpPages(<b>const</b> ObjectAllocator *nm, <b>unsigned</b> width = 16);
+<b>void</b> DumpPagesEx(<b>const</b> ObjectAllocator *nm, <b>unsigned</b> width = 16);
+
+<b>void</b> DoStudents(<b>unsigned</b> padding = 0, <b>bool</b> printall = <b>false</b>);
+<b>void</b> DoEmployees();               
+<b>void</b> TestPadding(<b>unsigned</b> size);      
+<b>void</b> TestBasicHeaderBlocks();         
+<b>void</b> TestCorruption();            
+<b>void</b> DisableOA();                 
+<b>void</b> TestLeak();                  
+<b>void</b> TestValidate();              
+<b>void</b> TestAlignment();             
+<b>void</b> TestFreeEmptyPages1();       
+<b>void</b> TestFreeEmptyPages2();       
+<b>void</b> TestFreeEmptyPages3();       
+<b>void</b> StressFreeChecking();        
+<b>void</b> Stress(<b>bool</b> UseNewDelete);       
+
+<b>struct</b> Person
+{
+  <b>char</b> lastName[12];   
+  <b>char</b> firstName[12];  
+  <b>float</b> salary;        
+  <b>int</b> years;           
+};
+
+<b>struct</b> Person PEOPLE[] = {
+  {<font color="#9933CC">"Faith"</font>, <font color="#9933CC">"Ian"</font>, 80000, 10},
+  {<font color="#9933CC">"Tufnel"</font>, <font color="#9933CC">"Nigel"</font>, 90000, 12},
+  {<font color="#9933CC">"Savage"</font>, <font color="#9933CC">"Viv"</font>, 50000, 4},
+  {<font color="#9933CC">"Shrimpton"</font>, <font color="#9933CC">"Mick"</font>, 50000, 4},
+  {<font color="#9933CC">"Besser"</font>, <font color="#9933CC">"Joe"</font>, 40000, 1},
+  {<font color="#9933CC">"Smalls"</font>, <font color="#9933CC">"Derek"</font>, 80000, 10},
+  {<font color="#9933CC">"St.Hubbins"</font>, <font color="#9933CC">"David"</font>, 90000, 12},
+  {<font color="#9933CC">"Fleckman"</font>, <font color="#9933CC">"Bobbi"</font>, 120000, 8},
+  {<font color="#9933CC">"Eton-Hogg"</font>, <font color="#9933CC">"Denis"</font>, 250000, 22},
+  {<font color="#9933CC">"Upham"</font>, <font color="#9933CC">"Denny"</font>, 60000, 5},
+  {<font color="#9933CC">"McLochness"</font>, <font color="#9933CC">"Ross"</font>, 60000, 5},
+  {<font color="#9933CC">"Pudding"</font>, <font color="#9933CC">"Ronnie"</font>, 50000, 2},
+  {<font color="#9933CC">"Schindler"</font>, <font color="#9933CC">"Danny"</font>, 60000, 3},
+  {<font color="#9933CC">"Pettibone"</font>, <font color="#9933CC">"Jeanine"</font>, 85000, 3},
+  {<font color="#9933CC">"Fame"</font>, <font color="#9933CC">"Duke"</font>, 95000, 8},
+  {<font color="#9933CC">"Fufkin"</font>, <font color="#9933CC">"Artie"</font>, 45000, 1},
+  {<font color="#9933CC">"DiBergi"</font>, <font color="#9933CC">"Marty"</font>, 15000, 7},
+  {<font color="#9933CC">"Floyd"</font>, <font color="#9933CC">"Pink"</font>, 25000, 6},
+  {<font color="#9933CC">"Zeppelin"</font>, <font color="#9933CC">"Led"</font>, 35000, 3},
+  {<font color="#9933CC">"Mason"</font>, <font color="#9933CC">"Nick"</font>, 15000, 7},
+  {<font color="#9933CC">"Wright"</font>, <font color="#9933CC">"Richard"</font>, 17000, 9},
+  {<font color="#9933CC">"Waters"</font>, <font color="#9933CC">"Roger"</font>, 10000, 3},
+  {<font color="#9933CC">"Gilmore"</font>, <font color="#9933CC">"David"</font>, 19000, 5}
+};
+
+<b>void</b> FillEmployee(Employee&amp; emp)
+{
+  static <b>unsigned</b> <b>int</b> index = 0;
+
+  strcpy(emp.firstName, PEOPLE[index].firstName);
+  strcpy(emp.lastName, PEOPLE[index].lastName);
+  emp.salary = PEOPLE[index].salary;
+  emp.years = PEOPLE[index].years;
+  index++;
+  <b>if</b> (index &gt;= <b>sizeof</b>(PEOPLE) / <b>sizeof</b>(*PEOPLE))
+    index = 0;
+}
+
+<b>void</b> DumpCallback(<b>const</b> <b>void</b> *block, size_t actual_size)
+{
+  size_t size = actual_size;
+    <font color="#003399"><i>// limit to 16 bytes</i></font>
+  <b>if</b> (actual_size &gt; 16)
+    size = 16;
+
+  <b>unsigned</b> <b>char</b> *data = <b>const_cast</b>&lt;<b>unsigned</b> <b>char</b>*&gt;(<b>static_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(block));
+
+  <b>if</b> (SHOWADDRESS1)
+    printf(<font color="#9933CC">"Block at 0x%p, %u bytes long.\n"</font>, block, <b>static_cast</b>&lt;<b>unsigned</b>&gt;(actual_size));
+  <b>else</b>
+    printf(<font color="#9933CC">"Block at 0x00000000, %u bytes long.\n"</font>, <b>static_cast</b>&lt;<b>unsigned</b>&gt;(actual_size));
+
+    <font color="#003399"><i>// If we were passed a NULL pointer, do nothing</i></font>
+  <b>if</b> (!block)
+    <b>return</b>;
+
+  printf(<font color="#9933CC">" Data: &lt;"</font>);
+  <b>for</b> (<b>unsigned</b> <b>int</b> i = 0; i &lt; size; i++)
+  {
+    <b>unsigned</b> <b>char</b> c = *data++;
+    <b>if</b> (c &gt; 31 &amp;&amp; c &lt; 128) <font color="#003399"><i>// printable range</i></font>
+      printf(<font color="#9933CC">"%c"</font>, c);
+    <b>else</b>
+      printf(<font color="#9933CC">" "</font>);
+  }
+  printf(<font color="#9933CC">"&gt;"</font>);
+
+  data = <b>const_cast</b>&lt;<b>unsigned</b> <b>char</b>*&gt;(<b>static_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(block));
+  <b>for</b> (<b>unsigned</b> <b>int</b> i = 0; i &lt; size; i++)
+    printf(<font color="#9933CC">" %02X"</font>, <b>static_cast</b>&lt;<b>int</b>&gt;(*data++));
+  printf(<font color="#9933CC">"\n"</font>);
+}
+
+<b>void</b> DumpCallback2(<b>const</b> <b>void</b> *, size_t)
+{
+}
+
+<b>void</b> CheckAndDumpLeaks(<b>const</b> ObjectAllocator* oa)
+{
+  <b>if</b> (oa-&gt;GetStats().ObjectsInUse_)
+  {
+    printf(<font color="#9933CC">"Detected memory leaks!\n"</font>);
+    printf(<font color="#9933CC">"Dumping objects -&gt;\n"</font>);
+    <b>unsigned</b> leaks = oa-&gt;DumpMemoryInUse(DumpCallback);
+    printf(<font color="#9933CC">"Object dump complete. [%u]\n"</font>, leaks);
+  }
+  <b>else</b>
+    printf(<font color="#9933CC">"No leaks detected.\n"</font>);
+}
+
+<b>void</b> ValidateCallback(<b>const</b> <b>void</b> *block, size_t actual_size)
+{
+  <b>if</b> (SHOWADDRESS2)
+    printf(<font color="#9933CC">"Block at 0x%p, %u bytes long.\n"</font>, block, <b>static_cast</b>&lt;<b>unsigned</b>&gt;(actual_size));
+  <b>else</b>
+    printf(<font color="#9933CC">"Block at 0x00000000, %u bytes long.\n"</font>, <b>static_cast</b>&lt;<b>unsigned</b>&gt;(actual_size));
+
+  <b>if</b> (!block)
+    <b>return</b>;
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>int</b> RandomInt(<b>int</b> low, <b>int</b> high)
+{
+  <font color="#003399"><i>//return std::rand() % (high - low + 1) + low;</i></font>
+  <b>return</b> Digipen::Utils::Random(low, high);
+}
+
+<b>template</b> &lt;<b>typename</b> T&gt;
+<b>void</b> SwapT(T &amp;a, T &amp;b)
+{
+  T temp = a;
+  a = b;
+  b = temp;
+}
+
+<b>template</b> &lt;<b>typename</b> T&gt;
+<b>void</b> Shuffle(T *array, <b>unsigned</b> count)
+{
+  <b>for</b> (<b>unsigned</b> <b>int</b> i = 0; i &lt; count; i++)
+  {
+    <b>int</b> r = RandomInt(<b>static_cast</b>&lt;<b>int</b>&gt;(i), <b>static_cast</b>&lt;<b>int</b>&gt;(count) - 1);
+    SwapT(array[i], array[r]);
+  }
+}
+
+<b>template</b> &lt;<b>typename</b> T&gt;
+<b>void</b> PrintArray(T *array, <b>unsigned</b> count)
+{
+  <b>for</b> (<b>unsigned</b> i = 0; i &lt; count; i++)
+    std::cout &lt;&lt; array[i] &lt;&lt; std::endl;
+}
+
+<b>const</b> <b>unsigned</b> objects = 4096;
+<b>const</b> <b>unsigned</b> pages = 100;
+<b>const</b> <b>unsigned</b> total = objects * pages;
+<b>void</b> *ptrs[total];
+
+<font color="990099">#include &lt;ctime&gt;</font>
+<b>void</b> Stress(<b>bool</b> UseNewDelete)
+{
+  ObjectAllocator *oa;
+    
+  <b>try</b>
+  {
+    <b>bool</b> newdel = UseNewDelete;
+    <b>bool</b> debug = <b>false</b>;
+    <b>unsigned</b> padbytes = 0;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbNone);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, objects, pages, debug, padbytes, header, alignment);
+    oa  = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+    <b>for</b> (<b>unsigned</b> i = 0; i &lt; total; i++)
+    {
+      <b>void</b> *p = oa-&gt;Allocate();
+      ptrs[i] = p;
+    }
+
+    Shuffle(ptrs, total);
+    <b>for</b> (<b>unsigned</b> i = 0; i &lt; total; i++)
+    {
+      oa-&gt;Free(ptrs[i]);
+    }
+
+    <b>delete</b> oa;
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during construction in Stress."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+}
+
+<b>void</b> StressFreeChecking(<b>const</b> OAConfig::HeaderBlockInfo&amp; header)
+{
+  <b>unsigned</b> objects;
+  <b>unsigned</b> pages;
+
+  objects = 1000;
+  pages = 10;
+
+  <b>const</b> <b>unsigned</b> total = objects * pages;
+
+  ObjectAllocator *oa;
+    
+  <b>char</b> **ptrs = <b>new</b> <b>char</b>*[total];
+  
+  <b>try</b>
+  { 
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 0;
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, objects, pages, debug, padbytes, header, alignment);
+    oa  = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+
+    <b>for</b> (<b>unsigned</b> <b>int</b> i = 0; i &lt; total; i++)
+    {
+      <b>void</b> *p = oa-&gt;Allocate();
+      ptrs[i] = <b>static_cast</b>&lt;<b>char</b> *&gt;(p);
+    }
+
+    PrintConfig(oa);
+    PrintCounts(oa);
+    <font color="#003399"><i>//DumpPagesEx(oa, 42);</i></font>
+
+    Shuffle(ptrs, total);
+    <b>for</b> (<b>unsigned</b> <b>int</b> i = 0; i &lt; total; i++)
+    {
+      oa-&gt;Free(ptrs[i]);
+    }
+
+    oa-&gt;DumpMemoryInUse(DumpCallback2);
+    <b>delete</b> oa;
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+    {
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during StressFreeChecking."</font>  &lt;&lt; endl;
+      fflush(stdout);
+    }
+
+    <b>return</b>;
+  }
+  <b>delete</b> [] ptrs;
+}
+
+<b>void</b> TestFreeEmptyPages1()
+{
+  <b>if</b> (!ObjectAllocator::ImplementedExtraCredit())
+    <b>return</b>;
+
+  ObjectAllocator *oa;
+  <b>const</b> <b>int</b> objects = 4;
+  <b>const</b> <b>int</b> pages = 3;
+  <b>const</b> <b>int</b> total = objects * pages;
+  <b>void</b> *ptrs[total];
+  <b>try</b>
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 2;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbNone);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, objects, pages, debug, padbytes, header, alignment);
+    oa  = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+
+    <b>unsigned</b> width = 32; 
+
+    <b>for</b> (<b>int</b> i = 0; i &lt; total; i++)
+    {
+      <b>void</b> *p = oa-&gt;Allocate();
+      ptrs[i] = p;
+    }
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    PrintConfig(oa);
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <b>for</b> (<b>int</b> i = 0; i &lt; objects; i++)
+      oa-&gt;Free(ptrs[i + 0]);
+
+    <b>for</b> (<b>int</b> i = 0; i &lt; objects; i++)
+      oa-&gt;Free(ptrs[i + 8]);
+
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    <b>for</b> (<b>int</b> i = 0; i &lt; objects - 1; i++)
+      oa-&gt;Free(ptrs[i + 4]);
+    oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    oa-&gt;Free(ptrs[7]);
+    oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    printf(<font color="#9933CC">"\n\n"</font>);
+    <b>void</b> *p = oa-&gt;Allocate();
+    oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    oa-&gt;Free(p);
+    <font color="#003399"><i>//oa-&gt;FreeEmptyPages();</i></font>
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <b>delete</b> oa;
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during TestFreeEmptyPages1."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+}
+
+<b>void</b> TestFreeEmptyPages2()
+{
+  <b>if</b> (!ObjectAllocator::ImplementedExtraCredit())
+    <b>return</b>;
+
+  ObjectAllocator *oa;
+  <b>const</b> <b>int</b> objects = 4;
+  <b>const</b> <b>int</b> pages = 3;
+  <b>const</b> <b>int</b> total = objects * pages;
+  <b>void</b> *ptrs[total];
+  <b>try</b>
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 2;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbBasic);
+    <b>unsigned</b> alignment = 16;
+
+    OAConfig config(newdel, objects, pages, debug, padbytes, header, alignment);
+    oa  = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+
+    <b>unsigned</b> width = 32;
+
+    <b>for</b> (<b>int</b> i = 0; i &lt; total; i++)
+    {
+      <b>void</b> *p = oa-&gt;Allocate();
+      ptrs[i] = p;
+    }
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    PrintConfig(oa);
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <b>for</b> (<b>int</b> i = 0; i &lt; objects; i++)
+      oa-&gt;Free(ptrs[i + 0]);
+
+    <b>for</b> (<b>int</b> i = 0; i &lt; objects; i++)
+      oa-&gt;Free(ptrs[i + 8]);
+
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    <b>for</b> (<b>int</b> i = 0; i &lt; objects - 1; i++)
+      oa-&gt;Free(ptrs[i + 4]);
+    oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <font color="#003399"><i>//****************************************************************************</i></font>
+    oa-&gt;Free(ptrs[7]);
+    oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    <b>delete</b> oa;
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during TestFreeEmptyPages2."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+}
+
+<b>void</b> TestFreeEmptyPages3()
+{
+  <b>if</b> (!ObjectAllocator::ImplementedExtraCredit())
+    <b>return</b>;
+
+  ObjectAllocator *oa;
+  <b>const</b> <b>int</b> objects = 8;
+  <b>const</b> <b>int</b> pages = 48;
+  <b>const</b> <b>int</b> total = objects * pages;
+  <b>void</b> *ptrs[total];
+  <b>try</b>
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 6;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbExtended, 9);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, objects, pages, debug, padbytes, header, alignment);
+    oa  = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+
+    <b>unsigned</b> width = 32; 
+
+    <b>for</b> (<b>int</b> i = 0; i &lt; total; i++)
+    {
+      <b>void</b> *p = oa-&gt;Allocate();
+      ptrs[i] = p;
+    }
+    PrintConfig(oa);
+    PrintCounts(oa);
+    <font color="#003399"><i>//DumpPages(oa, width);</i></font>
+
+    Shuffle(ptrs, total);
+    <b>for</b> (<b>int</b> i = 0; i &lt; total - 5; i++)
+    {
+      oa-&gt;Free(ptrs[i]);
+    }
+    PrintCounts(oa);
+    <font color="#003399"><i>//DumpPages(oa, width);</i></font>
+
+    <b>unsigned</b> count = oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+    printf(<font color="#9933CC">"%i pages freed\n"</font>, count);
+
+    <b>delete</b> oa;
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during TestFreeEmptyPages3."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+}
+
+<b>void</b> TestFreeEmptyPages4()
+{
+  <b>if</b> (!ObjectAllocator::ImplementedExtraCredit())
+    <b>return</b>;
+
+  ObjectAllocator *oa;
+  <b>const</b> <b>int</b> objects = 8;
+  <b>const</b> <b>int</b> pages = 48;
+  <b>const</b> <b>int</b> total = objects * pages;
+  <b>void</b> *ptrs[total];
+  <b>try</b>
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 6;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbExtended, 9);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, objects, pages, debug, padbytes, header, alignment);
+    oa  = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+
+    <b>unsigned</b> width = 32; 
+
+    <b>for</b> (<b>int</b> i = 0; i &lt; total; i++)
+    {
+      <b>void</b> *p = oa-&gt;Allocate();
+      ptrs[i] = p;
+    }
+    PrintConfig(oa);
+    PrintCounts(oa);
+    DumpPages(oa, width);
+
+    Shuffle(ptrs, total);
+    <b>for</b> (<b>int</b> i = 0; i &lt; total - 5; i++)
+    {
+      oa-&gt;Free(ptrs[i]);
+      PrintCounts(oa);
+      DumpPages(oa, width);
+    }
+    <font color="#003399"><i>//PrintCounts(oa);</i></font>
+    <font color="#003399"><i>//DumpPages(oa, width);</i></font>
+
+    <b>unsigned</b> count = oa-&gt;FreeEmptyPages();
+    PrintCounts(oa);
+    DumpPages(oa, width);
+    printf(<font color="#9933CC">"%i pages freed\n"</font>, count);
+
+    <b>delete</b> oa;
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during TestFreeEmptyPages3."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> TestBasicHeaderBlocks()
+{
+  ObjectAllocator *oa = 0;
+
+  <b>try</b> 
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 2;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbBasic);
+    <b>unsigned</b> alignment = 1;
+
+    OAConfig config(newdel, 4, 2, debug, padbytes, header, alignment);
+    oa = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during construction in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+
+  <b>unsigned</b> wrap = 32;
+  PrintConfig(oa);
+  PrintCounts(oa);
+  DumpPages(oa, wrap);
+
+  Student *pStudent1 = 0;
+  <b>try</b>
+  {
+    pStudent1 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  Student *pStudent2 = 0;
+  <b>try</b>
+  {
+    pStudent2 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+
+  <b>try</b>
+  {
+    oa-&gt;Free(pStudent1);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS) 
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+
+  <b>try</b>
+  {
+    oa-&gt;Free(pStudent2);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS) 
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+
+  <b>try</b>
+  {
+    pStudent1 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestBasicHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+  <b>delete</b> oa;
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> TestExtendedHeaderBlocks(<b>unsigned</b> size)
+{
+  ObjectAllocator *oa = 0;
+  <b>unsigned</b> wrap = 32;
+
+  <b>try</b> 
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 2;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbExtended, size);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, 4, 2, debug, padbytes, header, alignment);
+    oa = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during construction in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+
+  PrintConfig(oa);
+  PrintCounts(oa);
+  DumpPages(oa, wrap);
+
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  Student *pStudent1 = 0;
+  <b>try</b>
+  {
+    pStudent1 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  Student *pStudent2 = 0;
+  <b>try</b>
+  {
+    pStudent2 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <b>try</b>
+  {
+    oa-&gt;Free(pStudent1);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS) 
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <b>try</b>
+  {
+    oa-&gt;Free(pStudent2);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS) 
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <b>try</b>
+  {
+    pStudent1 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+    <font color="#003399"><i>//pStudent2 = static_cast&lt;Student *&gt;( oa-&gt;Allocate() );</i></font>
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <b>try</b>
+  {
+    <b>for</b> (<b>int</b> i = 0; i &lt; 5; i++)
+    {
+      oa-&gt;Free(pStudent1);
+      pStudent1 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+    }
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <font color="#003399"><i>///////////////////////////////////////////////////////////////////////////////////////////////</i></font>
+  <b>try</b>
+  {
+    pStudent2 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+
+
+
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestExtendedHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  DumpPages(oa, wrap);
+  <b>delete</b> oa;
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> TestExternalHeaderBlocks()
+{
+  ObjectAllocator *oa = 0;
+  <b>unsigned</b> wrap = 32;
+
+  <b>try</b> 
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 2;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbExternal);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, 4, 1, debug, padbytes, header, alignment);
+    oa = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during construction in TestExternalHeaderBlocks."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+
+  PrintConfig(oa);
+  PrintCounts(oa);
+  DumpPagesEx(oa, wrap);
+
+  Student *pStudent1 = 0;
+  <b>try</b>
+  {
+    pStudent1 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate(<font color="#9933CC">"First student"</font>) );
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestExternalHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestExternalHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  PrintCounts(oa);
+  DumpPagesEx(oa, wrap);
+
+  Student *pStudent2 = 0;
+  <b>try</b>
+  {
+    pStudent2 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate(<font color="#9933CC">"Second student"</font>) );
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestExternalHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestExternalHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  PrintCounts(oa);
+  DumpPagesEx(oa, wrap);
+
+  <b>try</b>
+  {
+    oa-&gt;Free(pStudent1);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS) 
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in TestExternalHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in TestExternalHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  PrintCounts(oa);
+  DumpPagesEx(oa, wrap);
+
+  <b>try</b>
+  {
+    oa-&gt;Free(pStudent2);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS) 
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in TestExternalHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in TestExternalHeaderBlocks."</font>  &lt;&lt; endl;
+  }
+
+  PrintCounts(oa);
+  DumpPagesEx(oa, wrap);
+
+  <b>delete</b> oa;
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> DoStudents(<b>unsigned</b> padding, <b>bool</b> printall)
+{
+  <b>try</b> 
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = padding;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbNone);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, 4, 2, debug, padbytes, header, alignment);
+    studentObjectMgr = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during construction in DoStudents."</font>  &lt;&lt; endl;
+    <b>return</b>;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from constructor in DoStudents."</font>  &lt;&lt; endl;
+  }
+
+  <b>unsigned</b> wrap = 32;
+  PrintConfig(studentObjectMgr);
+  PrintCounts(studentObjectMgr);
+  DumpPages(studentObjectMgr, wrap);
+
+  Student *pStudent1 = 0, *pStudent2 = 0, *pStudent3 = 0;
+  <b>try</b>
+  {
+    pStudent1 = <b>static_cast</b>&lt;Student *&gt;( studentObjectMgr-&gt;Allocate() );
+    PrintCounts(studentObjectMgr);
+    <b>if</b> (printall)
+      DumpPages(studentObjectMgr, wrap);
+    pStudent2 = <b>static_cast</b>&lt;Student *&gt;( studentObjectMgr-&gt;Allocate() );
+    PrintCounts(studentObjectMgr);
+    <b>if</b> (printall)
+      DumpPages(studentObjectMgr, wrap);
+    pStudent3 = <b>static_cast</b>&lt;Student *&gt;( studentObjectMgr-&gt;Allocate() );
+    PrintCounts(studentObjectMgr);
+    <b>if</b> (printall)
+      DumpPages(studentObjectMgr, wrap);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in DoStudents."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  { 
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in DoStudents."</font>  &lt;&lt; endl;
+  }
+
+  Student *pStudent4[6];
+  <b>for</b> (<b>int</b> i = 0; i &lt; 6; i++)
+  {
+    <b>try</b>
+    {
+      pStudent4[i] = <b>static_cast</b>&lt;Student *&gt;( studentObjectMgr-&gt;Allocate() );
+      <b>if</b> (pStudent4[i] == 0)
+        <b>break</b>;
+    }
+    <b>catch</b> (<b>const</b> OAException&amp; e)
+    {
+      <b>if</b> (SHOW_EXCEPTIONS)
+        cout &lt;&lt; e.what() &lt;&lt; endl;
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate (2) in DoStudents."</font>  &lt;&lt; endl;
+
+      <b>break</b>;
+    }
+    <b>catch</b>(...)
+    {
+      cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate (2) in DoStudents."</font>  &lt;&lt; endl;
+    }
+
+  }
+  PrintCounts(studentObjectMgr);
+  <b>if</b> (printall)
+    DumpPages(studentObjectMgr, wrap);
+
+  <b>try</b>
+  {
+    studentObjectMgr-&gt;Free(pStudent1);
+    PrintCounts(studentObjectMgr);
+    <b>if</b> (printall)
+      DumpPages(studentObjectMgr, wrap);
+    studentObjectMgr-&gt;Free(pStudent2);
+    PrintCounts(studentObjectMgr);
+    <b>if</b> (printall)
+      DumpPages(studentObjectMgr, wrap);
+    studentObjectMgr-&gt;Free(pStudent3);
+    PrintCounts(studentObjectMgr);
+    <b>if</b> (printall)
+      DumpPages(studentObjectMgr, wrap);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in DoStudents."</font>  &lt;&lt; endl;
+
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in DoStudents."</font>  &lt;&lt; endl;
+  }
+
+  cout &lt;&lt; <font color="#9933CC">"Most students in use: "</font> &lt;&lt; studentObjectMgr-&gt;GetStats().MostObjects_ &lt;&lt; endl;
+  <b>delete</b> studentObjectMgr;
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> TestPadding(<b>unsigned</b> size)
+{
+  DoStudents(size);
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> DoEmployees()
+{
+  <b>try</b>
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 0;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbNone);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, 4, 2, debug, padbytes, header, alignment);
+    employeeObjectMgr = <b>new</b> ObjectAllocator(<b>sizeof</b>(Employee), config);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during construction in DoEmployees."</font>  &lt;&lt; endl;
+    <b>return</b>;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown during constructor in DoEmployees."</font>  &lt;&lt; endl;
+  }
+
+  PrintConfig(employeeObjectMgr);
+  PrintCounts(employeeObjectMgr);
+
+  Employee *pEmployee1 = 0, *pEmployee2 = 0, *pEmployee3 = 0;
+  <b>try</b>
+  {
+    pEmployee1 = <b>static_cast</b>&lt;Employee *&gt;(employeeObjectMgr-&gt;Allocate());
+    PrintCounts(employeeObjectMgr);
+    pEmployee2 = <b>static_cast</b>&lt;Employee *&gt;(employeeObjectMgr-&gt;Allocate());
+    PrintCounts(employeeObjectMgr);
+    pEmployee3 = <b>static_cast</b>&lt;Employee *&gt;(employeeObjectMgr-&gt;Allocate());
+    PrintCounts(employeeObjectMgr);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in DoEmployees."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in DoEmployees."</font>  &lt;&lt; endl;
+  }
+
+  Employee *pEmployee4[7];
+  <b>for</b> (<b>int</b> i = 0; i &lt; 7; i++)
+  {
+    <b>try</b> 
+    {
+        <font color="#003399"><i>// Need to use /EHa, not /EHs</i></font>
+        <font color="#003399"><i>// ******************************************* Puts &amp;employeeObjMgr in ecx</i></font>
+      pEmployee4[i] = <b>static_cast</b>&lt;Employee *&gt;(employeeObjectMgr-&gt;Allocate());
+    }
+    <b>catch</b> (<b>const</b> OAException&amp; e)
+    {
+      <b>if</b> (SHOW_EXCEPTIONS)
+      {
+          <font color="#003399"><i>// ******************** Hoses the ecx register containing &amp;employeeObjMgr</i></font>
+        cout &lt;&lt; e.what() &lt;&lt; endl;
+      }
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate (2) in DoEmployees."</font>  &lt;&lt; endl;
+
+      <b>break</b>;
+    }
+    <b>catch</b>(...)
+    {
+      cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate (2) in DoEmployees."</font>  &lt;&lt; endl;
+    }
+  }
+    <font color="#003399"><i>// ************************* blindly pushes ecx as if it still has &amp;empObjMgr</i></font>
+  PrintCounts(employeeObjectMgr); 
+
+  <b>try</b>
+  {
+    employeeObjectMgr-&gt;Free(pEmployee1);
+    PrintCounts(employeeObjectMgr);
+    employeeObjectMgr-&gt;Free(pEmployee2);
+    PrintCounts(employeeObjectMgr);
+    employeeObjectMgr-&gt;Free(pEmployee3);
+    PrintCounts(employeeObjectMgr);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in DoEmployees."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in DoEmployees."</font>  &lt;&lt; endl;
+  }
+
+    <font color="#003399"><i>// Free an object twice</i></font>
+  <b>try</b> {
+    employeeObjectMgr-&gt;Free(pEmployee1);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e) 
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free (Freeing object twice) in DoEmployees."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free (Freeing object twice) in DoEmployees."</font>  &lt;&lt; endl;
+  }
+
+    <font color="#003399"><i>// Free an invalid pointer (bad boundary condition)</i></font>
+  <b>try</b> 
+  {
+    employeeObjectMgr-&gt;Free(<b>reinterpret_cast</b>&lt;<b>char</b> *&gt;(pEmployee4[0]) + 4);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e) 
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free (Freeing address on bad boundary) in DoEmployees."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free (Freeing address on bad boundary) in DoEmployees."</font>  &lt;&lt; endl;
+  }
+
+  cout &lt;&lt; <font color="#9933CC">"Most employees in use: "</font> &lt;&lt; employeeObjectMgr-&gt;GetStats().MostObjects_&lt;&lt; endl;
+  <b>delete</b> employeeObjectMgr;
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> DisableOA()
+{
+  <b>try</b> 
+  {
+    <b>bool</b> newdel = <b>true</b>;
+    <b>bool</b> debug = <b>false</b>;
+    <b>unsigned</b> padbytes = 0;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbNone);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, 4, 2, debug, padbytes, header, alignment);
+    studentObjectMgr = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during constructor in DisableOA."</font>  &lt;&lt; endl;
+    <b>return</b>;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown during constructor in DisableOA."</font>  &lt;&lt; endl;
+  }
+
+  PrintConfig(studentObjectMgr);
+  PrintCounts2(studentObjectMgr);
+
+  Student *pStudent1 = 0, *pStudent2 = 0, *pStudent3 = 0;
+  <b>try</b>
+  {
+    pStudent1 = <b>static_cast</b>&lt;Student *&gt;( studentObjectMgr-&gt;Allocate() );
+    PrintCounts2(studentObjectMgr);
+    pStudent2 = <b>static_cast</b>&lt;Student *&gt;( studentObjectMgr-&gt;Allocate() );
+    PrintCounts2(studentObjectMgr);
+    pStudent3 = <b>static_cast</b>&lt;Student *&gt;( studentObjectMgr-&gt;Allocate() );
+    PrintCounts2(studentObjectMgr);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in DisableOA."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in DisableOA."</font>  &lt;&lt; endl;
+  }
+
+  Student *pStudent4[6];
+  <b>for</b> (<b>int</b> i = 0; i &lt; 6; i++)
+  {
+    <b>try</b>
+    {
+      pStudent4[i] = <b>static_cast</b>&lt;Student *&gt;( studentObjectMgr-&gt;Allocate() );
+    }
+    <b>catch</b> (<b>const</b> OAException&amp; e)
+    {
+      <b>if</b> (SHOW_EXCEPTIONS)
+        cout &lt;&lt; e.what() &lt;&lt; endl;
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate (2) in DisableOA."</font>  &lt;&lt; endl;
+      <b>break</b>;
+    }
+    <b>catch</b>(...)
+    {
+      cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate (2) in DisableOA."</font>  &lt;&lt; endl;
+    }
+
+  }
+  PrintCounts2(studentObjectMgr);
+
+  <b>try</b>
+  {
+    studentObjectMgr-&gt;Free(pStudent1);
+    PrintCounts2(studentObjectMgr);
+    studentObjectMgr-&gt;Free(pStudent2);
+    PrintCounts2(studentObjectMgr);
+    studentObjectMgr-&gt;Free(pStudent3);
+    PrintCounts2(studentObjectMgr);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in DisableOA."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in DIsableOA."</font>  &lt;&lt; endl;
+  }
+
+  <b>for</b> (<b>int</b> i = 0; i &lt; 6; i++)
+  {
+    <b>try</b>
+    {
+      studentObjectMgr-&gt;Free(pStudent4[i]);
+    }
+    <b>catch</b> (<b>const</b> OAException&amp; e)
+    {
+      <b>if</b> (SHOW_EXCEPTIONS)
+        cout &lt;&lt; e.what() &lt;&lt; endl;
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in DisableOA."</font>  &lt;&lt; endl;
+      <b>break</b>;
+    }
+    <b>catch</b>(...)
+    {
+      cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in DisableOA."</font>  &lt;&lt; endl;
+    }
+
+  }
+  PrintCounts2(studentObjectMgr);
+
+  cout &lt;&lt; <font color="#9933CC">"Most students in use: "</font> &lt;&lt; studentObjectMgr-&gt;GetStats().MostObjects_ &lt;&lt; endl;
+  <b>delete</b> studentObjectMgr;
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> TestCorruption()
+{
+  ObjectAllocator *oa = 0;
+  <b>unsigned</b> <b>char</b> *p;
+  <b>unsigned</b> padbytes = 8;
+  <b>unsigned</b> i;
+  <b>unsigned</b> wrap = 32;
+  Student *pStudent1, *pStudent2 = 0;
+  <b>try</b> 
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <font color="#003399"><i>//unsigned header = 0;</i></font>
+    <font color="#003399"><i>//OAConfig::HBLOCK_TYPE header = OAConfig::hbNone;</i></font>
+    OAConfig::HeaderBlockInfo header(OAConfig::hbBasic);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, 4, 2, debug, padbytes, header, alignment);
+    <font color="#003399"><i>//OAConfig config(false, 4, 2, true, padbytes);</i></font>
+    oa = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+    pStudent1 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+    pStudent2 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+    
+    PrintConfig(oa);
+    PrintCounts(oa);
+    DumpPages(oa, wrap);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during construction/allocation in TestCorruption."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+
+    <font color="#003399"><i>// corrupt left pad bytes</i></font>
+  p = <b>const_cast</b>&lt;<b>unsigned</b> <b>char</b>*&gt;(<b>reinterpret_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(pStudent1)) - padbytes;
+  <b>for</b> (i = 0; i &lt; padbytes - 2; i++)
+    *p++ = 0xFF;
+
+    <font color="#003399"><i>// corrupt right pad bytes</i></font>
+  p = <b>const_cast</b>&lt;<b>unsigned</b> <b>char</b>*&gt;(<b>reinterpret_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(pStudent2)) + <b>sizeof</b>(Student);
+  <b>for</b> (i = 0; i &lt; padbytes - 2; i++)
+    *p++ = 0xEE;
+
+  <b>try</b>
+  {
+    oa-&gt;Free(pStudent1);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+    {
+      <b>if</b> (e.code() == e.E_CORRUPTED_BLOCK)
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free: E_CORRUPTED_BLOCK on left"</font>  &lt;&lt; endl;
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"****** Unknown OAException thrown from Free in TestCorruption. ******"</font>  &lt;&lt; endl;
+    }
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in TestCorruption."</font>  &lt;&lt; endl;
+  }
+
+  <b>try</b>
+  {
+    oa-&gt;Free(pStudent2);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+    {
+      <b>if</b> (e.code() == e.E_CORRUPTED_BLOCK)
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free: E_CORRUPTED_BLOCK on right"</font>  &lt;&lt; endl;
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"****** Unknown OAException thrown from Free (2) in TestCorruption. ******"</font>  &lt;&lt; endl;
+    }
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free (2) in TestCorruption."</font>  &lt;&lt; endl;
+  }
+
+  <b>delete</b> oa;
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> TestLeak()
+{
+  <b>unsigned</b> count = 0;
+  Employee **pEmps = 0;
+
+  <b>try</b>
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 0;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbBasic);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, 4, 8, debug, padbytes, header, alignment);
+    employeeObjectMgr = <b>new</b> ObjectAllocator(<b>sizeof</b>(Employee), config);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during constructor in TestLeak."</font>  &lt;&lt; endl;
+
+    <b>return</b>;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown during constructor in TestLeak."</font>  &lt;&lt; endl;
+  }
+
+  PrintConfig(employeeObjectMgr);
+  PrintCounts(employeeObjectMgr);
+
+  count = employeeObjectMgr-&gt;GetConfig().MaxPages_ * employeeObjectMgr-&gt;GetConfig().ObjectsPerPage_;
+  pEmps = <b>new</b> Employee *[count];
+
+  <b>for</b> (<b>unsigned</b> i = 0; i &lt; count; i++)
+  {
+    <b>try</b> 
+    {
+      pEmps[i] = <b>static_cast</b>&lt;Employee *&gt;(employeeObjectMgr-&gt;Allocate());
+      FillEmployee(*pEmps[i]);
+    }
+    <b>catch</b> (<b>const</b> OAException&amp; e)
+    {
+      <b>if</b> (SHOW_EXCEPTIONS)
+        cout &lt;&lt; e.what() &lt;&lt; endl;
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Allocate in TestLeak."</font>  &lt;&lt; endl;
+
+      <b>break</b>;
+    }
+    <b>catch</b>(...)
+    {
+      cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Allocate in TestLeak."</font>  &lt;&lt; endl;
+    }
+  }
+  PrintCounts(employeeObjectMgr); 
+
+  <b>try</b>
+  {
+    <b>for</b> (<b>unsigned</b> i = 0; i &lt; count; i += 2)
+      employeeObjectMgr-&gt;Free(pEmps[i]);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free in TestLeak."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in TestLeak."</font>  &lt;&lt; endl;
+  }
+
+  PrintCounts(employeeObjectMgr);
+
+  cout &lt;&lt; <font color="#9933CC">"Most employees in use: "</font> &lt;&lt; employeeObjectMgr-&gt;GetStats().MostObjects_&lt;&lt; endl;
+
+  cout &lt;&lt; <font color="#9933CC">"\nChecking for leaks...\n"</font>;
+  CheckAndDumpLeaks(employeeObjectMgr);
+
+  <b>try</b>
+  {
+    <b>for</b> (<b>unsigned</b> i = 1; i &lt; count; i += 2)
+      employeeObjectMgr-&gt;Free(pEmps[i]);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free (2) in TestLeak."</font>  &lt;&lt; endl;
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free (2) in TestLeak."</font>  &lt;&lt; endl;
+  }
+
+  cout &lt;&lt; <font color="#9933CC">"\nChecking for leaks...\n"</font>;
+  CheckAndDumpLeaks(employeeObjectMgr);
+
+  <b>delete</b> employeeObjectMgr;
+  <b>delete</b> [] pEmps;
+}
+
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> TestValidate()
+{
+  ObjectAllocator *oa = 0;
+  <b>unsigned</b> <b>char</b> *p;
+  <b>unsigned</b> i, padbytes = 8;
+  <b>unsigned</b> wrap = 32;
+  Student *pStudent1 = 0, *pStudent2 = 0, *pStudent7 = 0;
+  <b>try</b> 
+  {
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbBasic);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, 4, 2, debug, padbytes, header, alignment);
+    oa = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+
+    pStudent1 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+    pStudent2 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+    oa-&gt;Allocate(); <font color="#003399"><i>// 3</i></font>
+    oa-&gt;Allocate(); <font color="#003399"><i>// 4</i></font>
+    oa-&gt;Allocate(); <font color="#003399"><i>// 5</i></font>
+    oa-&gt;Allocate(); <font color="#003399"><i>// 6</i></font>
+    pStudent7 = <b>static_cast</b>&lt;Student *&gt;( oa-&gt;Allocate() );
+    PrintConfig(oa);
+    PrintCounts(oa);
+    DumpPages(oa, wrap);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during construction/allocation in TestValidate."</font>  &lt;&lt; endl;
+    <b>return</b>;
+  }
+
+  <b>try</b>
+  {
+      <font color="#003399"><i>// Validate a good heap</i></font>
+    <b>unsigned</b> count = oa-&gt;ValidatePages(ValidateCallback);
+    cout &lt;&lt; <font color="#9933CC">"Number of corruptions: "</font> &lt;&lt; count &lt;&lt; endl &lt;&lt; endl;
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+    {
+      <b>if</b> (e.code() == e.E_CORRUPTED_BLOCK)
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free: E_CORRUPTED_BLOCK on left"</font>  &lt;&lt; endl;
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"****** Unknown OAException thrown from Free in TestValidate. ******"</font>  &lt;&lt; endl;
+    }
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free in TestValidate."</font>  &lt;&lt; endl;
+  }
+
+    <font color="#003399"><i>// corrupt left pad bytes of 1</i></font>
+  p = <b>const_cast</b>&lt;<b>unsigned</b> <b>char</b>*&gt;(<b>reinterpret_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(pStudent1)) - padbytes;
+  <b>for</b> (i = 0; i &lt; padbytes - 2; i++)
+    *p++ = 0xFF;
+
+    <font color="#003399"><i>// corrupt right pad bytes of 2</i></font>
+  p = <b>const_cast</b>&lt;<b>unsigned</b> <b>char</b>*&gt;(<b>reinterpret_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(pStudent2)) + <b>sizeof</b>(Student);
+  <b>for</b> (i = 0; i &lt; padbytes - 2; i++)
+    *p++ = 0xEE;
+
+  PrintCounts(oa);
+  DumpPages(oa, wrap);
+
+  <b>try</b>
+  {
+      <font color="#003399"><i>// Validate a corrupted heap</i></font>
+    <b>unsigned</b> count = oa-&gt;ValidatePages(ValidateCallback);
+    cout &lt;&lt; <font color="#9933CC">"Number of corruptions: "</font> &lt;&lt; count &lt;&lt; endl &lt;&lt; endl;
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+    {
+      <b>if</b> (e.code() == e.E_CORRUPTED_BLOCK)
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free: E_CORRUPTED_BLOCK on left"</font>  &lt;&lt; endl;
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"****** Unknown OAException thrown from Free (2) in TestValidate. ******"</font>  &lt;&lt; endl;
+    }
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free (2) in TestValidate."</font>  &lt;&lt; endl;
+  }
+
+    <font color="#003399"><i>// corrupt left pad bytes of 7</i></font>
+  p = <b>const_cast</b>&lt;<b>unsigned</b> <b>char</b>*&gt;(<b>reinterpret_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(pStudent7)) - padbytes;
+  <b>for</b> (i = 0; i &lt; padbytes - 2; i++)
+    *p++ = 0xFF;
+
+    <font color="#003399"><i>// corrupt right pad bytes of 7</i></font>
+  p = <b>const_cast</b>&lt;<b>unsigned</b> <b>char</b>*&gt;(<b>reinterpret_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(pStudent7)) + <b>sizeof</b>(Student);
+  <b>for</b> (i = 0; i &lt; padbytes - 2; i++)
+    *p++ = 0xEE;
+
+  PrintCounts(oa);
+  DumpPages(oa, wrap);
+
+  <b>try</b>
+  {
+      <font color="#003399"><i>// Validate a corrupted heap</i></font>
+    <b>unsigned</b> count = oa-&gt;ValidatePages(ValidateCallback);
+    cout &lt;&lt; <font color="#9933CC">"Number of corruptions: "</font> &lt;&lt; count &lt;&lt; endl &lt;&lt; endl;
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+    {
+      <b>if</b> (e.code() == e.E_CORRUPTED_BLOCK)
+        cout &lt;&lt; <font color="#9933CC">"Exception thrown from Free: E_CORRUPTED_BLOCK on left"</font>  &lt;&lt; endl;
+      <b>else</b>
+        cout &lt;&lt; <font color="#9933CC">"****** Unknown OAException thrown from Free (3) in TestValidate. ******"</font>  &lt;&lt; endl;
+    }
+  }
+  <b>catch</b>(...)
+  {
+    cout &lt;&lt; <font color="#9933CC">"Unexpected exception thrown from Free (3) in TestValidate."</font>  &lt;&lt; endl;
+  }
+  <b>if</b> (oa)
+    <b>delete</b> oa;
+}
+
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<font color="#003399"><i>//****************************************************************************************************</i></font>
+<b>void</b> TestAlignment()
+{
+  <b>if</b> (!ObjectAllocator::ImplementedExtraCredit())
+    <b>return</b>;
+
+  ObjectAllocator *oa = 0;
+  <b>try</b> 
+  {
+    <b>unsigned</b> wrap = 32;
+
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>true</b>;
+    <b>unsigned</b> padbytes = 2;
+    <font color="#003399"><i>//unsigned header = 0;</i></font>
+    OAConfig::HeaderBlockInfo header(OAConfig::hbBasic);
+    <b>unsigned</b> alignment = 8;
+
+    OAConfig config(newdel, 3, 2, debug, padbytes, header, alignment);
+
+    <b>if</b> (!oa)
+      oa = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+
+    PrintConfig(oa);
+    PrintCounts(oa);
+    DumpPages(oa, wrap);
+
+    oa-&gt;Allocate(); <font color="#003399"><i>// 1</i></font>
+    oa-&gt;Allocate(); <font color="#003399"><i>// 2</i></font>
+    oa-&gt;Allocate(); <font color="#003399"><i>// 3</i></font>
+    oa-&gt;Allocate(); <font color="#003399"><i>// 4</i></font>
+    oa-&gt;Allocate(); <font color="#003399"><i>// 5</i></font>
+    oa-&gt;Allocate(); <font color="#003399"><i>// 6</i></font>
+
+    PrintCounts(oa);
+    DumpPages(oa, wrap);
+  }
+  <b>catch</b> (<b>const</b> OAException&amp; e)
+  {
+    <b>if</b> (SHOW_EXCEPTIONS)
+      cout &lt;&lt; e.what() &lt;&lt; endl;
+    <b>else</b>
+      cout &lt;&lt; <font color="#9933CC">"Exception thrown during construction/allocation in TestAlignment."</font>  &lt;&lt; endl;
+    <b>return</b>;
+  }
+  <b>if</b> (oa)
+    <b>delete</b> oa;
+}
+
+
+<b>void</b> PrintCounts(<b>const</b> ObjectAllocator *nm)
+{
+  OAStats stats = nm-&gt;GetStats();
+  cout &lt;&lt; <font color="#9933CC">"Pages in use: "</font> &lt;&lt; stats.PagesInUse_;
+  cout &lt;&lt; <font color="#9933CC">", Objects in use: "</font> &lt;&lt; stats.ObjectsInUse_;
+  cout &lt;&lt; <font color="#9933CC">", Available objects: "</font> &lt;&lt; stats.FreeObjects_;
+  cout &lt;&lt; <font color="#9933CC">", Allocs: "</font> &lt;&lt; stats.Allocations_;
+  cout &lt;&lt; <font color="#9933CC">", Frees: "</font> &lt;&lt; stats.Deallocations_ &lt;&lt; endl;
+}
+
+<b>void</b> PrintCounts2(<b>const</b> ObjectAllocator *nm)
+{
+  OAStats stats = nm-&gt;GetStats();
+  cout &lt;&lt; <font color="#9933CC">"Allocs: "</font> &lt;&lt; stats.Allocations_;
+  cout &lt;&lt; <font color="#9933CC">", Frees: "</font> &lt;&lt; stats.Deallocations_ &lt;&lt; endl;
+}
+
+<b>void</b> PrintConfig(<b>const</b> ObjectAllocator *oa)
+{
+  cout &lt;&lt; <font color="#9933CC">"Object size = "</font> &lt;&lt; oa-&gt;GetStats().ObjectSize_;
+  cout &lt;&lt; <font color="#9933CC">", Page size = "</font> &lt;&lt; oa-&gt;GetStats().PageSize_;
+  cout &lt;&lt; <font color="#9933CC">", Pad bytes = "</font> &lt;&lt; oa-&gt;GetConfig().PadBytes_;
+  cout &lt;&lt; <font color="#9933CC">", ObjectsPerPage = "</font> &lt;&lt; oa-&gt;GetConfig().ObjectsPerPage_;
+  cout &lt;&lt; <font color="#9933CC">", MaxPages = "</font> &lt;&lt; oa-&gt;GetConfig().MaxPages_;
+  cout &lt;&lt; <font color="#9933CC">", MaxObjects = "</font> &lt;&lt;  oa-&gt;GetConfig().ObjectsPerPage_ * oa-&gt;GetConfig().MaxPages_;
+  cout &lt;&lt; endl;
+  cout &lt;&lt; <font color="#9933CC">"Alignment = "</font> &lt;&lt; oa-&gt;GetConfig().Alignment_;
+  cout &lt;&lt; <font color="#9933CC">", LeftAlign = "</font> &lt;&lt; oa-&gt;GetConfig().LeftAlignSize_;
+  cout &lt;&lt; <font color="#9933CC">", InterAlign = "</font> &lt;&lt; oa-&gt;GetConfig().InterAlignSize_;
+  cout &lt;&lt; <font color="#9933CC">", HeaderBlocks = "</font>;
+  <b>if</b> (oa-&gt;GetConfig().HBlockInfo_.type_ == OAConfig::hbNone)
+    cout &lt;&lt; <font color="#9933CC">"None"</font>;
+  <b>else</b> <b>if</b> (oa-&gt;GetConfig().HBlockInfo_.type_ == OAConfig::hbBasic)
+    cout &lt;&lt; <font color="#9933CC">"Basic"</font>;
+  <b>else</b> <b>if</b> (oa-&gt;GetConfig().HBlockInfo_.type_ == OAConfig::hbExtended)
+    cout &lt;&lt; <font color="#9933CC">"Extended"</font>;
+  <b>else</b> <b>if</b> (oa-&gt;GetConfig().HBlockInfo_.type_ == OAConfig::hbExternal)
+    cout &lt;&lt; <font color="#9933CC">"External"</font>;
+  cout &lt;&lt; <font color="#9933CC">", Header size = "</font> &lt;&lt; oa-&gt;GetConfig().HBlockInfo_.size_;
+  cout &lt;&lt; endl;
+}
+
+<b>void</b> DumpPages(<b>const</b> ObjectAllocator *nm, <b>unsigned</b> width)
+{
+  <b>const</b> <b>unsigned</b> <b>char</b> *pages = <b>static_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(nm-&gt;GetPageList());
+  <b>const</b> <b>unsigned</b> <b>char</b> *realpage = pages;
+  
+  size_t header_size = nm-&gt;GetConfig().HBlockInfo_.size_;
+
+  <b>while</b> (pages)
+  {
+    <b>unsigned</b> count = 0;
+
+    <b>if</b> (SHOWREAL)
+      printf(<font color="#9933CC">"%p\n"</font>, pages);
+    <b>else</b>
+      printf(<font color="#9933CC">"XXXXXXXX\n"</font>);
+
+          <font color="#003399"><i>// print column header</i></font>
+    <b>for</b> (<b>unsigned</b> j = 0; j &lt; width; j++)
+      printf(<font color="#9933CC">" %2i"</font>, j);
+    printf(<font color="#9933CC">"\n"</font>);
+
+      <font color="#003399"><i>// "Next page" pointer in the page</i></font>
+    <b>if</b> (SHOWREAL)
+    {
+      <b>for</b> (<b>unsigned</b> i = 0; i &lt; <b>sizeof</b>(<b>void</b> *); i++, count++)
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+    }
+    <b>else</b>
+    {
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; <b>sizeof</b>(<b>void</b> *); pages++, count++, j++)
+        printf(<font color="#9933CC">" %s"</font>, <font color="#9933CC">"XX"</font>);
+    }
+
+
+      <font color="#003399"><i>// Left leading alignment bytes</i></font>
+    <b>if</b> (nm-&gt;GetConfig().Alignment_ &gt; 1)
+    {
+        <font color="#003399"><i>// leading alignment block (if any)</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetConfig().LeftAlignSize_; count++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+      }
+    }
+
+      <font color="#003399"><i>// Dump each object and its associated info</i></font>
+    <b>for</b> (<b>unsigned</b> <b>int</b> i = 0; i &lt; nm-&gt;GetConfig().ObjectsPerPage_ ; i++)
+    {
+        <font color="#003399"><i>// inter-block alignment (not on first block)</i></font>
+      <b>if</b> (i &gt; 0)
+      {
+        <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetConfig().InterAlignSize_; count++, j++)
+        {
+          <b>if</b> (count &gt;= width)
+          {
+            printf(<font color="#9933CC">"\n"</font>);
+            count = 0;
+          }
+          printf(<font color="#9933CC">" %02X"</font>, *pages++);
+        }
+      }
+
+        <font color="#003399"><i>// header block bytes</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; header_size; count++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+      }
+
+        <font color="#003399"><i>// left padding</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetConfig().PadBytes_; count++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+
+
+
+      }
+
+        <font color="#003399"><i>// possible next pointer (zero it out)</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; <b>sizeof</b>(<b>void</b> *); count++, pages++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        <b>if</b> (SHOWREAL)
+          printf(<font color="#9933CC">" %02X"</font>, *pages);
+        <b>else</b>
+          printf(<font color="#9933CC">" %s"</font>, <font color="#9933CC">"XX"</font>);
+      }
+        
+        <font color="#003399"><i>// remaining bytes</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetStats().ObjectSize_ - <b>sizeof</b>(<b>void</b> *); count++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+      }
+
+        <font color="#003399"><i>// right pad bytes</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetConfig().PadBytes_; count++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+      }
+
+    }
+    printf(<font color="#9933CC">"\n\n"</font>);
+
+    pages = <b>reinterpret_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;((<b>reinterpret_cast</b>&lt;<b>const</b> GenericObject *&gt;(realpage))-&gt;Next);
+    realpage = pages;
+  }
+}
+
+<b>void</b> DumpExternalHeaders(<b>const</b> ObjectAllocator *oa, <b>const</b> <b>unsigned</b> <b>char</b> *p)
+{
+  <b>unsigned</b> <b>char</b> *page = <b>const_cast</b>&lt;<b>unsigned</b> <b>char</b> *&gt;(p);
+
+  <b>unsigned</b> padbytes = oa-&gt;GetConfig().PadBytes_;  
+  size_t header_size = oa-&gt;GetConfig().HBlockInfo_.size_;
+  <b>unsigned</b> leftalign = oa-&gt;GetConfig().LeftAlignSize_;
+  <b>unsigned</b> interalign = oa-&gt;GetConfig().InterAlignSize_;
+  <b>unsigned</b> count = oa-&gt;GetConfig().ObjectsPerPage_;
+  size_t offset = padbytes * 2 + header_size + interalign + oa-&gt;GetStats().ObjectSize_;
+
+  page += <b>sizeof</b>(<b>void</b> *); <font color="#003399"><i>// the 'next' pointer</i></font>
+  page += leftalign;      <font color="#003399"><i>// the left alignment bytes (if any)</i></font>
+
+    <font color="#003399"><i>// We're now pointing at the beginning of the header block</i></font>
+
+  MemBlockInfo *pm = <b>reinterpret_cast</b>&lt;MemBlockInfo *&gt;(*<b>reinterpret_cast</b>&lt;MemBlockInfo **&gt;(page));
+  cout &lt;&lt; <font color="#9933CC">"  Label: "</font> &lt;&lt; (pm &amp;&amp; pm-&gt;label ? pm-&gt;label : <font color="#9933CC">""</font>) &lt;&lt; std::endl;
+  cout &lt;&lt; <font color="#9933CC">" In use: "</font> &lt;&lt; (pm ? pm-&gt;in_use : 0) &lt;&lt; std::endl;
+  cout &lt;&lt; <font color="#9933CC">"Alloc #: "</font> &lt;&lt; (pm &amp;&amp; pm-&gt;in_use ? pm-&gt;alloc_num : 0) &lt;&lt; std::endl;
+
+  <b>for</b> (<b>unsigned</b> i = 1; i &lt; count; i++)
+  {
+    page += offset;
+    MemBlockInfo *pm = <b>reinterpret_cast</b>&lt;MemBlockInfo *&gt;(*<b>reinterpret_cast</b>&lt;MemBlockInfo **&gt;(page));
+    cout &lt;&lt; <font color="#9933CC">"  Label: "</font> &lt;&lt; (pm &amp;&amp; pm-&gt;label ? pm-&gt;label : <font color="#9933CC">""</font>) &lt;&lt; std::endl;
+    cout &lt;&lt; <font color="#9933CC">" In use: "</font> &lt;&lt; (pm ? pm-&gt;in_use : 0) &lt;&lt; std::endl;
+    cout &lt;&lt; <font color="#9933CC">"Alloc #: "</font> &lt;&lt; (pm &amp;&amp; pm-&gt;in_use ? pm-&gt;alloc_num : 0) &lt;&lt; std::endl;
+  }
+}
+
+<b>void</b> DumpPagesEx(<b>const</b> ObjectAllocator *nm, <b>unsigned</b> width)
+{
+  <b>const</b> <b>unsigned</b> <b>char</b> *pages = <b>static_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;(nm-&gt;GetPageList());
+  <b>const</b> <b>unsigned</b> <b>char</b> *realpage = pages;
+  
+  size_t header_size = nm-&gt;GetConfig().HBlockInfo_.size_;
+
+  <b>while</b> (pages)
+  {
+    <b>unsigned</b> count = 0;
+
+    <b>if</b> (SHOWREAL)
+      printf(<font color="#9933CC">"%p\n"</font>, pages);
+    <b>else</b>
+      printf(<font color="#9933CC">"XXXXXXXX\n"</font>);
+
+          <font color="#003399"><i>// print column header</i></font>
+    <b>for</b> (<b>unsigned</b> j = 0; j &lt; width; j++)
+      printf(<font color="#9933CC">" %2i"</font>, j);
+    printf(<font color="#9933CC">"\n"</font>);
+
+    <b>if</b> (SHOWREAL)
+    {
+      <b>for</b> (<b>unsigned</b> i = 0; i &lt; <b>sizeof</b>(<b>void</b> *); i++, count++)
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+    }
+    <b>else</b>
+    {
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; <b>sizeof</b>(<b>void</b> *); pages++, count++, j++)
+        printf(<font color="#9933CC">" %s"</font>, <font color="#9933CC">"XX"</font>);
+    }
+
+
+      <font color="#003399"><i>// Left leading alignment bytes</i></font>
+    <b>if</b> (nm-&gt;GetConfig().Alignment_ &gt; 1)
+    {
+        <font color="#003399"><i>// leading alignment block (if any)</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetConfig().LeftAlignSize_; count++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+      }
+    }
+
+    <b>for</b> (<b>unsigned</b> <b>int</b> i = 0; i &lt; nm-&gt;GetConfig().ObjectsPerPage_ ; i++)
+    {
+        <font color="#003399"><i>// inter-block alignment (not on first block)</i></font>
+      <b>if</b> (i &gt; 0)
+      {
+        <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetConfig().InterAlignSize_; count++, j++)
+        {
+          <b>if</b> (count &gt;= width)
+          {
+            printf(<font color="#9933CC">"\n"</font>);
+            count = 0;
+          }
+          printf(<font color="#9933CC">" %02X"</font>, *pages++);
+        }
+      }
+
+        <font color="#003399"><i>// header block bytes</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; header_size; count++, j++, pages++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        <font color="#003399"><i>/*/</i></font><font color="#003399"><i>///////////////////======================================================================</i></font>
+        In external mode, pointer address is embedded into the header memory
+        <font color="#003399"><i>/////////////////////=======================================================================*/</i></font>
+        <b>if</b> (SHOWREAL)
+          printf(<font color="#9933CC">" %02X"</font>, *pages);
+        <b>else</b>
+          printf(<font color="#9933CC">" %s"</font>, <font color="#9933CC">"XX"</font>);
+      }
+
+        <font color="#003399"><i>// left padding</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetConfig().PadBytes_; count++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+      }
+
+        <font color="#003399"><i>// possible next pointer (zero it out)</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; <b>sizeof</b>(<b>void</b> *); count++, pages++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        <b>if</b> (SHOWREAL)
+          printf(<font color="#9933CC">" %02X"</font>, *pages);
+        <b>else</b>
+          printf(<font color="#9933CC">" %s"</font>, <font color="#9933CC">"XX"</font>);
+      }
+        
+        <font color="#003399"><i>// remaining bytes</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetStats().ObjectSize_ - <b>sizeof</b>(<b>void</b> *); count++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+          count = 0;
+        }
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+      }
+
+        <font color="#003399"><i>// right pad bytes</i></font>
+      <b>for</b> (<b>unsigned</b> j = 0; j &lt; nm-&gt;GetConfig().PadBytes_; count++, j++)
+      {
+        <b>if</b> (count &gt;= width)
+        {
+          printf(<font color="#9933CC">"\n"</font>);
+
+
+
+          count = 0;
+        }
+        printf(<font color="#9933CC">" %02X"</font>, *pages++);
+      }
+
+    }
+    printf(<font color="#9933CC">"\n"</font>);
+    DumpExternalHeaders(nm, realpage);
+    printf(<font color="#9933CC">"\n"</font>);
+
+    pages = <b>reinterpret_cast</b>&lt;<b>const</b> <b>unsigned</b> <b>char</b> *&gt;((<b>reinterpret_cast</b>&lt;<b>const</b> GenericObject *&gt;(realpage))-&gt;Next);
+    realpage = pages;
+  }
+}
+
+<b>void</b> Test1()
+{
+  ObjectAllocator *oa;
+    
+    <b>bool</b> newdel = <b>false</b>;
+    <b>bool</b> debug = <b>false</b>;
+    <b>unsigned</b> padbytes = 0;
+    OAConfig::HeaderBlockInfo header(OAConfig::hbExternal);
+    <b>unsigned</b> alignment = 0;
+
+    OAConfig config(newdel, 1, 1, debug, padbytes, header, alignment);
+    oa  = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), config);
+
+    oa-&gt;Allocate();
+
+    PrintConfig(oa);
+    PrintCounts(oa);
+    DumpPagesEx(oa, 32);
+
+    <b>delete</b> oa;
+}
+
+
+<b>int</b> main(<b>int</b> argc, <b>char</b> **argv)
+{
+  <b>int</b> test = 0;
+
+  <b>if</b> (argc &gt; 1)
+    test = std::atoi(argv[1]);
+  <b>if</b> (argc &gt; 2)
+    SHOWADDRESS1 = std::atoi(argv[2]);
+  <b>if</b> (argc &gt; 3)
+    SHOWADDRESS2 = std::atoi(argv[3]);
+  <b>if</b> (argc &gt; 4)
+    SHOWREAL = std::atoi(argv[4]);
+  <b>if</b> (argc &gt; 5)
+    SHOW_EXCEPTIONS = std::atoi(argv[5]);
+  <b>if</b> (argc &gt; 6)
+    EXTRA_CREDIT = std::atoi(argv[6]);
+
+  <b>switch</b> (test)
+  {
+    <b>case</b> 1:
+      cout &lt;&lt; <font color="#9933CC">"============================== Students..."</font> &lt;&lt; endl;
+      DoStudents(0, <b>false</b>);
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 2:
+      cout &lt;&lt; <font color="#9933CC">"============================== Students..."</font> &lt;&lt; endl;
+      DoStudents(0, <b>true</b>);
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 3:
+      cout &lt;&lt; <font color="#9933CC">"============================== Employees..."</font> &lt;&lt; endl;
+      DoEmployees();
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 4:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test padding..."</font> &lt;&lt; endl;
+      TestPadding(6);
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 5:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test padding..."</font> &lt;&lt; endl;
+      TestPadding(10);
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 6:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test basic header blocks..."</font> &lt;&lt; endl;
+      TestBasicHeaderBlocks();
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 7:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test extended header blocks(1)..."</font> &lt;&lt; endl;
+      TestExtendedHeaderBlocks(1);
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 8:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test external header blocks..."</font> &lt;&lt; endl;
+      TestExternalHeaderBlocks();
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 9:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test corruption..."</font> &lt;&lt; endl;
+      TestCorruption();
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 10:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test using new/delete..."</font> &lt;&lt; endl;
+      DisableOA();
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 11:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test leak..."</font> &lt;&lt; endl;
+      TestLeak(); 
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 12:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test validate..."</font> &lt;&lt; endl;
+      TestValidate();
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 13:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test free checking basic (stress)..."</font> &lt;&lt; endl;
+      StressFreeChecking(OAConfig::HeaderBlockInfo(OAConfig::hbBasic));
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 14:
+      cout&lt;&lt; <font color="#9933CC">"============================== Test free checking extended (stress)..."</font> &lt;&lt; endl;
+      StressFreeChecking(OAConfig::HeaderBlockInfo(OAConfig::hbExtended, 1));
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 15:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test free checking external (stress)..."</font> &lt;&lt; endl;
+      StressFreeChecking(OAConfig::HeaderBlockInfo(OAConfig::hbExternal));
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 16:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test stress using new/delete..."</font> &lt;&lt; endl;
+      Stress(<b>true</b>);
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 17:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test stress using allocator..."</font> &lt;&lt; endl;
+      Stress(<b>false</b>);
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 18:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test alignment..."</font> &lt;&lt; endl;
+      TestAlignment();
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 19:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test free empty pages 1..."</font> &lt;&lt; endl;
+      TestFreeEmptyPages1(); 
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 20:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test free empty pages 2..."</font> &lt;&lt; endl;
+      TestFreeEmptyPages2(); 
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>case</b> 21:
+      cout &lt;&lt; <font color="#9933CC">"============================== Test free empty pages 3..."</font> &lt;&lt; endl;
+      TestFreeEmptyPages4(); 
+      cout &lt;&lt; endl;
+      <b>break</b>;
+    <b>default</b>:
+      cout &lt;&lt; <font color="#9933CC">"============================== Students..."</font> &lt;&lt; endl;
+      DoStudents(0, <b>false</b>);
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Students..."</font> &lt;&lt; endl;
+      DoStudents(0, <b>true</b>);
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Employees..."</font> &lt;&lt; endl;
+      DoEmployees();
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test padding..."</font> &lt;&lt; endl;
+      TestPadding(6);
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test padding..."</font> &lt;&lt; endl;
+      TestPadding(10);
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test basic header blocks..."</font> &lt;&lt; endl;
+      TestBasicHeaderBlocks();
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test extended header blocks(1)..."</font> &lt;&lt; endl;
+      TestExtendedHeaderBlocks(1);
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test external header blocks..."</font> &lt;&lt; endl;
+      TestExternalHeaderBlocks();
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test corruption..."</font> &lt;&lt; endl;
+      TestCorruption();
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test using new/delete..."</font> &lt;&lt; endl;
+      DisableOA();
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test leak..."</font> &lt;&lt; endl;
+      TestLeak(); 
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test validate..."</font> &lt;&lt; endl;
+      TestValidate();
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test free checking basic (stress)..."</font> &lt;&lt; endl;
+      StressFreeChecking(OAConfig::HeaderBlockInfo(OAConfig::hbBasic));
+      cout &lt;&lt; endl;
+      cout&lt;&lt; <font color="#9933CC">"============================== Test free checking extended (stress)..."</font> &lt;&lt; endl;
+      StressFreeChecking(OAConfig::HeaderBlockInfo(OAConfig::hbExtended, 1));
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test free checking external (stress)..."</font> &lt;&lt; endl;
+      StressFreeChecking(OAConfig::HeaderBlockInfo(OAConfig::hbExternal));
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test stress using new/delete..."</font> &lt;&lt; endl;
+      Stress(<b>true</b>);
+      cout &lt;&lt; endl;
+      cout &lt;&lt; <font color="#9933CC">"============================== Test stress using allocator..."</font> &lt;&lt; endl;
+      Stress(<b>false</b>);
+      cout &lt;&lt; endl;
+      <b>if</b> (EXTRA_CREDIT)
+      {
+        cout &lt;&lt; <font color="#9933CC">"============================== Test alignment..."</font> &lt;&lt; endl;
+        TestAlignment();
+        cout &lt;&lt; endl;
+        cout &lt;&lt; <font color="#9933CC">"============================== Test free empty pages 1..."</font> &lt;&lt; endl;
+        TestFreeEmptyPages1(); 
+        cout &lt;&lt; endl;
+        cout &lt;&lt; <font color="#9933CC">"============================== Test free empty pages 2..."</font> &lt;&lt; endl;
+        TestFreeEmptyPages2(); 
+        cout &lt;&lt; endl;
+        cout &lt;&lt; <font color="#9933CC">"============================== Test free empty pages 3..."</font> &lt;&lt; endl;
+        TestFreeEmptyPages3(); 
+        cout &lt;&lt; endl;
+      }
+      <b>break</b>;
+  }
+
+  <font color="#003399"><i>//OAConfig config(false, 16, 4, false);</i></font>
+  <font color="#003399"><i>//ObjectAllocator a(sizeof(Student), config);</i></font>
+  <font color="#003399"><i>//ObjectAllocator b(sizeof(Student), config);</i></font>
+    <font color="#003399"><i>// These should fail to compile:</i></font>
+  <font color="#003399"><i>//ObjectAllocator c(a);</i></font>
+  <font color="#003399"><i>//a = b;</i></font>
+  
+
+  <b>return</b> 0;
+}
+</code></pre>
+
+
+<div>
+    <div class="vtResetstyles">
+    <div id="vtoverlay" class="vtoverlay vthidden w3-animate-right
+    w3-container">
+    <div class="vtmain vthidden" id="vtmain">
+      <div class="vtcontactus">
+          <a id="linktest" href="https://www.virustotal.com/">
+            <img class="vtlogo-popup" style=" width: 32px; 
+            height: 32px;" src="driver-sample.cpp_files/vt-logo.svg">
+          </a>
+          <a href="https://www.virustotal.com/">VT4Browsers
+          </a>
+      </div>
+      <span id="vtclose"><strong>X</strong></span>
+      <div class="vttextpopup vthidden" id="statustext">
+        <div class="vtscanstatus" id="vtscanstatus"></div>
+        <div class="vtprogress vthidden" id="vtprogress"></div>
+        <br id="brfile">
+        <div class="vtscanstatus" id="vtscanfilelink"></div>
+      </div>
+      <div class="vttextpopup vthidden" id="widgettext">
+        <div id="vtwidgetError"></div>
+      </div>
+    </div>
+    </div>
+    </div>
+    <div id="vt-augment-container" class="vtzindex vt-augment drawer" style="background: rgb(49, 61, 90);"></div></div><span class="vttooltiptext vthidden">&nbsp;Click to open VirusTotal report&nbsp;<br>with VT Augment</span><style></style></body></html>

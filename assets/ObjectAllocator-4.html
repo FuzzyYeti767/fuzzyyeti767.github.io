@@ -1,0 +1,115 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="ObjectAllocator-4_files/new.css">
+<title>CS 280 - ObjectAllocator #4</title>
+<style>
+  .vt-augment {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .vt-augment.drawer {
+    display: none;
+    width: 700px;
+    background: white;
+    border: 1px solid #e6e6e6;
+    text-align: left;
+    z-index: 102;
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    box-shadow: -4px 5px 8px -3px rgba(17, 17, 17, .16);
+    animation: slideToRight 0.5s 1 forwards;
+    transform: translateX(100vw);
+  }
+  .vt-augment.drawer[opened] {
+    display: flex;
+    animation: slideFromRight 0.2s 1 forwards;
+  }
+  .vt-augment > .spinner {
+    position: absolute;
+    z-index: 199;
+    top: calc(50% - 50px);
+    left: calc(50% - 50px);
+    border: 8px solid rgba(0, 0, 0, 0.2);
+    border-left-color: white;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1.2s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes slideFromRight {
+    0% {
+      transform: translateX(100vw);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  @keyframes slideToRight {
+    100% {
+      transform: translateX(100vw);
+      display: none;
+    }
+  }
+  @media screen and (max-width: 700px) {
+    .vt-augment.drawer {
+      width: 100%;
+    }
+  }
+</style></head>
+
+<body>  
+<h2>Object Allocator Diagram #4</h2>
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/CS280/ObjectAllocator-3.html">Previous (Diagram 3)</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/CS280/ObjectAllocator-5.html">Next (Diagram 5)</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/CS280/ObjectAllocatorIndex.html">Index</a>
+
+<img src="ObjectAllocator-4_files/ObjectAllocator-4.gif">
+
+<p>
+
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/CS280/ObjectAllocator-3.html">Previous (Diagram 3)</a>
+<br>
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/CS280/ObjectAllocator-5.html">Next (Diagram 5)</a>
+<br>
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/CS280/ObjectAllocatorIndex.html">Index</a>
+
+
+
+
+
+</p><blockquote><pre></pre></blockquote>
+
+<div>
+    <div class="vtResetstyles">
+    <div id="vtoverlay" class="vtoverlay vthidden w3-animate-right
+    w3-container">
+    <div class="vtmain vthidden" id="vtmain">
+      <div class="vtcontactus">
+          <a id="linktest" href="https://www.virustotal.com/">
+            <img class="vtlogo-popup" style=" width: 32px; 
+            height: 32px;" src="ObjectAllocator-4_files/vt-logo.svg">
+          </a>
+          <a href="https://www.virustotal.com/">VT4Browsers
+          </a>
+      </div>
+      <span id="vtclose"><strong>X</strong></span>
+      <div class="vttextpopup vthidden" id="statustext">
+        <div class="vtscanstatus" id="vtscanstatus"></div>
+        <div class="vtprogress vthidden" id="vtprogress"></div>
+        <br id="brfile">
+        <div class="vtscanstatus" id="vtscanfilelink"></div>
+      </div>
+      <div class="vttextpopup vthidden" id="widgettext">
+        <div id="vtwidgetError"></div>
+      </div>
+    </div>
+    </div>
+    </div>
+    <div id="vt-augment-container" class="vtzindex vt-augment drawer" style="background: rgb(49, 61, 90);"></div></div><span class="vttooltiptext vthidden">&nbsp;Click to open VirusTotal report&nbsp;<br>with VT Augment</span><style></style></body></html>

@@ -1,0 +1,800 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="CS280-FAQ1_files/new.css">
+<title>CS 280 - FAQ for Assignment #1</title>
+<style>
+  .vt-augment {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .vt-augment.drawer {
+    display: none;
+    width: 700px;
+    background: white;
+    border: 1px solid #e6e6e6;
+    text-align: left;
+    z-index: 102;
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    box-shadow: -4px 5px 8px -3px rgba(17, 17, 17, .16);
+    animation: slideToRight 0.5s 1 forwards;
+    transform: translateX(100vw);
+  }
+  .vt-augment.drawer[opened] {
+    display: flex;
+    animation: slideFromRight 0.2s 1 forwards;
+  }
+  .vt-augment > .spinner {
+    position: absolute;
+    z-index: 199;
+    top: calc(50% - 50px);
+    left: calc(50% - 50px);
+    border: 8px solid rgba(0, 0, 0, 0.2);
+    border-left-color: white;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1.2s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes slideFromRight {
+    0% {
+      transform: translateX(100vw);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  @keyframes slideToRight {
+    100% {
+      transform: translateX(100vw);
+      display: none;
+    }
+  }
+  @media screen and (max-width: 700px) {
+    .vt-augment.drawer {
+      width: 100%;
+    }
+  }
+</style></head>
+
+<body>  
+
+<center><h1>
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/2021/summer/cs280/project1-objectallocator/cs280-programming-assignment-object-allocator.pdf">Programming Assignment #1</a> FAQ
+<p>
+</p></h1><h2>(Frequently Asked Questions)</h2>
+
+</center>
+
+<br>
+<!-- Updated: 9/24/2002 8:23AM -->
+<p>
+
+Here are some popular Questions and Answers for assignment #1.<br>
+
+</p><hr>
+
+<ol>
+	
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+<li>
+<b>
+Question:<br>
+Can I modify the private section of the header file?
+</b>
+<p>
+
+<b>Answer:</b><br>
+Yes. In fact, you <i>must</i> modify it. You can put whatever you want in the private section. This includes
+fields and methods. (A lot of functionality is usually placed into the private methods.)
+However, you must not touch the public section at all (and there is no reason you should need to).
+I gave you the header file so you could see the interface that the client expects. Unfortunately,
+C++ does not (currently) allow you to have 2 header files for a single class.
+</p><p>
+Also, as stated in the handout, you are not allowed to put any implementation in the header file. All
+implementation goes in the .cpp file. Repeat: <b>NO IMPLEMENTATION, HOWEVER SLIGHT, IS ALLOWED IN THE HEADER
+FILE.</b> The exception to this is the implementation that I've already provided.
+</p><p>
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+<!--
+<hr>
+<b>
+Question:<br>
+Your output file for assignment 1 does not seemed to be the same as that
+produced by your driver file.
+</b>
+
+<p>
+In DoStudents you do something like:
+
+<pre class="sourcecode"><code>Student *pStudent1 = (Student *) studentObjectMgr-&gt;AllocateObject();
+PrintCounts(studentObjectMgr);
+Student *pStudent2 = (Student *) studentObjectMgr-&gt;AllocateObject();
+PrintCounts(studentObjectMgr);
+Student *pStudent3 = (Student *) studentObjectMgr-&gt;AllocateObject();
+PrintCounts(studentObjectMgr);
+
+Student *pStudent4[6];
+<b>for</b> (<b>int</b> i = 0; i &lt; 6; i++)
+  pStudent4[i] = (Student *) studentObjectMgr-&gt;AllocateObject();
+PrintCounts(studentObjectMgr);</code></pre>
+
+...this should make 9 Objects. But, your output is:
+<blockquote><pre>Pages in use: 2, Objects in use: 8, Available objects: 0</pre></blockquote>
+...shouldn't there be another page with 1 object in use?
+<p>
+
+<b>Answer:</b><br>
+The output is correct. You need to look closer at the construction of the ObjectAllocator:
+<blockquote><pre>
+studentObjectMgr = <b>new</b> ObjectAllocator(<b>sizeof</b>(Student), 4, 2, <b>false</b>);</pre></blockquote>
+
+This will indicate the maximum number of objects that the ObjectAllocator can allocate. 
+That's why the ObjectAllocator reports 8 objects. It doesn't matter how many objects the client 
+asks for; if the ObjectAllocator can't allocate them, it won't. It's the responsibility of 
+the client to catch the exception thrown if the ObjectAllocator can't fulfill the request
+for an object. That's why there's a message in the output indicating that no more pages
+can be allocated.
+
+<p>
+In C++, the <b>new</b> operator works in a similar fashion. It doesn't guarantee that you will get 
+the memory you requested. The client must ensure that the call to <b>new</b> was successful by surrounding
+the call with a <b>try...catch</b> block.
+<p>
+The ObjectAllocator should NEVER report more objects than it is configured to allocate. 
+This would be a bug.
+
+-->
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+
+<b>
+Question:<br>
+How should we calculate the page size?</b>
+<p>
+
+<b>Answer:</b><br>
+You should return the size of the entire page. For example, if you had a
+ page with 5 objects, each object 20 bytes, the actual size of the
+page is 108 bytes. (Number of objects) * (Size of object) + (Size of 
+link pointer) ==&gt; 5 * 20 + 8. If you have padding, header blocks, 
+and/or alignment bytes, you'd
+have to include those as well. The 8 bytes for the pointer is for a 
+64-bit program. If it was a 32-bit program,
+it will be 4 bytes. That's why you want to use <b><tt>sizeof(void*)</tt></b> instead of hard-coding
+a number
+</p><p>
+You should also look at the sample client code and output which 
+demonstrates a client interacting with the ObjectAllocator's interface.
+
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+<!--
+<hr>
+<li>
+<b>
+Question:<br>
+Should we allocate the first page in the constructor of ObjectAllocator or wait until the first 
+time the client calls Allocate?
+</b>
+<p>
+
+<b>Answer:</b><br>
+This situation is handled by <i>LazyInit</i> configuration field. This tells the
+ObjectAllocator when to allocate the first page. If <i>LazyInit</i> is <b>true</b>, the ObjectAllocator
+should wait (be lazy) until the client actually requests memory before allocating it internally. If 
+<i>LazyInit</i> is <b>false</b>, the ObjectAllocator should allocate it during the constructor. 
+<p>
+Some people may prefer to have objects available before the client makes a request. Others don't want to
+unnecessarily allocate a page until the client actually wants an object (thinking that maybe the client won't 
+ever ask for one, although this is not likely) There are actually some technical/philosophical issues involved with this approach, 
+(throwing exceptions from constructors) but it won't affect this assignment. 
+<p>
+-->
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+How should we structure the free list? Normally I would just do it my own way, 
+but the GetFreeList function implies that it should be in some specific format.
+</b>
+<p>
+
+<b>Answer:</b><br>
+This is a good point. "Normally", we don't want to expose any of the internal properties
+of our class because we want to be able to change them at will without affecting any of
+the clients. This is the reason that the <i>GetFreeList</i> method is listed under the
+comment "Testing/Debugging methods". It is meant to be used to debug the class from
+outside. There are other approaches to this such as making it protected and then creating
+a derived class whose sole purpose is to debug the implementation. Or we could make
+public iterators so that clients can request the "next" object in the list. It turns out that
+this unnecessarily complicates an otherwise "simple" class. (Plus, the primary purpose of this 
+assignment is to understand the memory-manager concept.) Since both the free list and 
+page list are implemented as simple, single-linked lists, it is trivial for everyone to implement
+them the same way.
+
+</p><p>
+The sample driver gets the pointer to the free list so it can dump out an object and see that
+the correct debugging information is present (predefined values, padding, header blocks). The GetPageList method
+is similar in that it allows the driver to dump the entire set of pages to examine their values. The
+GUI driver uses the page list so it can display a "memory dump" of your allocated pages in real time.
+</p><p>
+
+<!--
+<p>
+If you notice, the driver never calls GetFreeList. This is because there is no guarantee that
+everyone will implement it according to the diagrams (which, BTW, is the simplest and most efficient.) The GUI
+driver that I demonstrated does use this function to display the contents of the free list. For
+those students that choose to implement it as described, they would be able to take their implementation
+and "plug it in" to the GUI driver. However, there is no requirement that anyone do so.
+<p>
+-->
+
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+What are the specific text strings you want to have thrown? Since you seem to be intending on 
+sending those straight to the output, and that's one of the things you grade on.
+</b>
+<p>
+
+<b>Answer:</b><br>
+The text strings should be informative. This means if there is no memory available, you should say
+why. (e.g. because the system is out of memory or because the maximum page count has been reached.)
+</p><p>
+The driver that I use to grade the assignments (automatically using a diff program) won't print 
+out your text strings simply because it is very difficult to get everyone to emit the same strings. 
+(I've tried!) If you look at the sample driver, you'll see that there is a <b>#define</b> named
+<tt>SHOW_EXCEPTIONS</tt> which is used in order to show the error messages that your code emits.
+If this is not defined, generic error messages will be displayed by the driver instead.
+</p><p>
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+How are you grading this assignment? In other words, since the implementation is private, will we
+get full credit if we get the same output as your example driver?
+</b>
+<p>
+
+<b>Answer:</b><br>
+Obviously, your object allocator needs to work correctly to get full credit. But, like you said,
+the implementation is private so their is no one "right" implementation. However, some implementations
+are better or worse than others. Think in terms of complexity and memory usage. For example, if one
+implementation runs slower or uses more memory than another, it is less optimal. For this assignment, the
+scope of the memory manager's functionality is purposely limited so that you can focus on implementing it
+using the linked list technique shown in class. This will give you adequate practice with linked lists (for
+something other than the sake of linked lists) 
+and very efficient memory usage when implementing your own memory manager. 
+There are certainly many other ways to implement the private portions. If you choose to invent 
+your own algorithms, you need to ask yourself "Given the functionality of the Object Allocator, is this 
+superior to the one we discussed in class?"
+</p><p>
+As it turns out, for memory efficiency, the technique shown in the diagrams is just about
+"As Good As It Gets".™
+</p><p>
+
+
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+Do we need to handle objects smaller than 4 or 8 bytes (which are the sizes of a 32-bit pointer and
+a 64-bit pointer, respectively)?  
+</b>
+<p>
+
+<b>Answer:</b><br>
+No. In fact, you shouldn't attempt to do so. Managing such small objects will lead to poor performance.
+In the real world, we wouldn't dynamically allocate individual chunks like that. (We'd probably use an array
+of small chunks. However, our array could be allocated by the Object Allocator, so we still might benefit.) 
+</p><p>
+Because we require a linked list to track each block of memory (object) that the client requests, we need at
+least 4 bytes (for 32-bit pointers) and 8 bytes (for 64-bit pointers)
+ for the "next" pointer in each block. The linked list benefits from not having
+to allocate its own storage for the next pointer, which would have made our memory manager less efficient.
+Even if we chose, say, to keep an array of pointers to the blocks (a poor strategy for this assignment), 
+we still would have to consume extra memory to hold these pointers. To see why it's not a good approach,
+compare the complexity for memory usage using an array to track the blocks with the complexity for memory usage
+using the approach outlined in the diagrams.
+</p><p>
+Again, in the big picture, the limitation that each object must be at least 4 bytes (32-bit) or 8 bytes
+(64-bit) in size is not really a limitation at all.
+</p><p>
+<b>Note</b>: It is important that you <b>DO NOT</b> hard code the
+value <tt>32</tt> or <tt>64</tt> anywhere in your code. Use the expression: <tt><b>sizeof(void *)</b></tt> instead. This will allow your
+code to work correctly in both 32-bit and 64-bit environments (or anything else that might come along in the future, 
+like 128-bit pointers). It will
+also prevent you from receiving a lower grade on the assignment! 
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+<!--
+<hr>
+<li>
+<b>
+Question:<br>
+Should we align objects on specific boundaries? For example, if the client wants to store objects that 
+have a size of 17 bytes, should we make the object 20 bytes?
+</b>
+<p>
+
+<b>Answer:</b><br>
+No. This assignment already gives you plenty of stuff to worry about. As mentioned in class, we could continue
+to add many more "features" to the memory manager. The current functionality is enough for you to understand how to 
+construct a full-featured memory manager.
+<p>
+-->
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+What kinds of checks are enabled when the <tt>DebugOn</tt> flag is set?
+</b>
+<p>
+
+<b>Answer:</b><br>
+There are two areas that are controlled by this flag: Patterning the memory (writing a specific
+signature) and checking addresses/pad bytes when the client calls Free.
+</p><ol>
+	<li>Setting the memory blocks to a specific pattern (signature) is only done when DebugOn is true. 
+		This includes writing the pattern on the pad bytes as well.
+	</li><li>Checking the address when the client frees a block is done only when DebugOn is true. This includes
+		checking for bad boundaries and multiple frees.
+</li></ol>
+<p>
+Note that adding pad bytes is not part of the debug routine (it's 
+controlled by the value of the PadBytes configuration parameter). 
+However, writing a signature to those pad bytes is a debug task.
+</p><p>
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+Can we use <tt><b>memset</b></tt> to initialize the bytes with signatures?
+</b>
+<p>
+
+<b>Answer:</b><br>
+Yes, you should. This is a situation where you don't want to write your own <tt><b>memset</b></tt> function or use
+your own loop to set each byte of memory.
+<!--
+Not using <tt><b>memset</b></tt> (or an equivalent) will cause you to lose points.
+-->
+Note that <tt><b>memset</b></tt>
+is in <tt>string.h</tt> (or <tt>cstring</tt> for the C++ interface).
+</p><p>
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+There seems to be 4 different <i>modes</i> for the header blocks functionality. How do they differ?  
+</b>
+<p>
+
+<b>Answer:</b><br>
+There are 4 modes: none, basic, extended, and external. There is an enumeration in the OAConfig class
+that lists them:
+
+</p><blockquote><pre><b>enum</b> HBLOCK_TYPE{hbNone, hbBasic, hbExtended, hbExternal};
+</pre></blockquote>
+
+Descriptions:
+<p>
+</p><ul>
+	<li><b>None</b> - There are no header blocks, meaning this feature is disabled.</li><p>
+	</p><li><b>Basic</b> - A basic header is always 5 bytes in length. The first 4 bytes (from left to right)
+	are the allocation number of this block. The 5th (right-most) byte is a <i>flags</i> byte and is used to track various
+	attributes of the memory block. 
+	<br><br>
+	The allocation counter is kept internally by the object allocator. It 
+is incremented each time the allocator successfully gives
+	a block of memory (any block) to the client. At start, the counter is 
+0, and continues to increment for the life of the allocator. Currently,
+	the counter is a 4-byte unsigned value, meaning we can track over 4 
+billion allocations. We won't come anywhere near that in
+	this assignment! 
+	<br><br>
+	Currently, only one flag is used and the other 7 bits are reserved. The
+	right-most bit of the flag byte indicates whether the memory block is free, or is in-use. A value of 0
+	means the block is free (<tt><b>00000000</b></tt>), and a value of 1 indicates the block is currently in-use (<tt><b>00000001</b></tt>).
+	This flag will allow the object allocator to determine in constant time if a block is free. Without it, you must
+	walk the free list, which is a linear operation and can be extremely slow when you have a lot of blocks on the free list.
+	</li><p>
+	</p><li><b>Extended</b> - An extended header is similar to a basic header, but <b>adds two more fields:</b> a 2-byte use-counter and 
+		a user-defined field of any number of bytes. 
+		<br><br>
+		The 2-byte use-counter is used to count <i>how many times this block has been
+		(re)used</i>. This means, that each time the Object Allocator provides a block to the client, this counter is incremented. 
+		When a page is first allocated, the use-counter and flag byte are set to 0. 
+		The first time the block is given to the client, the value of the counter is 1. When the client later frees the block, 
+		<b>the counter is kept with the free block</b>. When the client asks for a block of memory and the Object Allocator gives back a previously
+		used (but now, free) block, the use-counter is incremented. See the sample driver and sample output for more information.
+		<br><br>
+		The user must specify how many additional bytes are to be reserved in 
+the header. This is supplied to the ObjectAllocator's constructor.
+		Currently, the values of these bytes are 0 and must remain 0. See the 
+driver for details.
+		<br><br>
+		So, from left to right, the extended header might look like this in 
+hexadecimal (assuming 5 additional user-defined bytes, for a total size 
+of 12 bytes):
+<blockquote><pre>0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+|          A           | |   B   | |        C         ||D | 
+</pre></blockquote>
+<ul>
+	<li>A is the 5 user-defined bytes</li>
+	<li>B is the 2-byte use-counter</li>
+	<li>C is the 4-byte allocation number</li>
+	<li>D is the flags byte</li>
+</ul>
+<p>
+An actual header would have values other than just 0x00 for each byte of the header. Also note that bytes
+in C and D are from the Basic header described above. The extra bytes <i>extend</i> the basic header, hence
+the name <i>extended</i> header.
+	</p></li>
+<p class="technote">
+The difference between the <i>allocation number</i> and the <i>use count</i> is that the allocation
+number is absolute. Each time a block (any block) is given to the client, the allocation number is
+incremented and written to the basic portion of the header block. When the block is freed, the
+4-byte allocation number is set to all zeros.
+<br><br>
+ The use (or reuse) counter is read from the extended portion of the header block, incremented,
+ and written back. This value is specific to this block and doesn't affect any other blocks'
+ use counter. When the block is freed, the counter is preserved. In other words, you never
+ reset the counter to zeros.
+</p>
+
+
+	<p>
+
+	</p><li><b>External</b> - An external header is different than the 
+others in that it is simply a pointer to a chunk of memory outside of 
+the block itself.
+	Hence the term, <i>external</i>. The size of the header block will 
+depend on the size of a pointer. It will be 4 bytes for a 32-bit CPU and
+ 
+	8 bytes for a 64-bit CPU. This pointer is stored in the header block 
+and points to the information about this block of memory.
+	Many real-world memory managers use this type of header because it is 
+much easier to extend and keeps all header blocks the same
+	size, regardless of the feature set. It also makes it easier to store 
+an unlimited amount of information about the block
+	(without affecting the blocks being managed).
+	<br><br>
+	At the time a block of memory is requested by the client, you will allocate (using <b>new</b>, not the ObjectAllocator) memory for the external
+	header. The external header currently has 3 fields and looks like this:
+
+<blockquote><pre><b>struct</b> MemBlockInfo
+{
+  <b>bool</b> in_use;        <font color="#003399"><i>// Is the block free or in use?</i></font>
+  <b>char</b> *label;        <font color="#003399"><i>// A dynamically allocated NUL-terminated string</i></font>
+  <b>unsigned</b> alloc_num; <font color="#003399"><i>// The allocation number (absolute count)</i></font>
+};
+</pre></blockquote>
+Be sure not to allocate this struct until the client calls the <i>Allocate</i>
+ method. You will have to initialize the actual header block (pointer)
+to zeros when you create a page, and update it with the address when the
+ block is actually allocated and given to the client. When the block is 
+freed
+(returned to the Object Allocator), you must <b>free the external header</b> and set the header value (pointer) back to zeros.
+<br><br>
+Be sure to free the struct (and the dynamically-allocated <i>label</i>) 
+when the client frees the block of memory. Also, in your destructor, you
+ will need to walk the pages and check to see if the client has failed
+to free blocks of memory. If any blocks were not returned by the client 
+and there are external header
+blocks associated with the memory, you need to free those external 
+header blocks (and the dynamically-allocated label as well.)
+Failure to do so will end up causing real memory leaks that will be 
+detected by Valgrind.
+<p>
+See these <a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/CS280/ObjectAllocatorIndex.html">Diagrams</a> for more help.
+</p><p class="technote">
+Note that it is actually redundant to have an <b><tt>in-use</tt></b> 
+flag because the presence
+(or absence) of an address in the header field already gives you that 
+information. This object allocator previously
+had additional features (pre-allocating the external headers, re-using 
+the headers, etc.) which made
+use of that flag. The assignment has been somewhat simplified so that 
+flag isn't needed. I left it in place
+and functional because I might return to that feature set in the future.
+ Also note that this structure
+is intentionally simplified. The goal of the assignment is not to 
+implement a complete and exhaustive feature
+set for a memory manager, but to get a feel for how it would be done. 
+Other interesting debugging fields could
+include a time stamp indicating when the block was allocated, the file 
+and line number in the code where the block was allocated, etc.
+These are features that all real-world memory managers (with debugging) 
+include.
+</p></li>
+<p></p>
+</ul>
+
+<!--^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ ^^^^ -->
+
+<!--
+Currently, there are only two valid values: 0 and 1. Since the size of the header block is greater
+than 1 byte (currently set to 4 bytes), you need to set all of the bits to 0 except for the right-most bit.
+So, a block that is free should have its header block set to:
+
+<blockquote><pre>
+00000000 00000000 00000000 00000000
+</pre></blockquote>
+
+and a block that is in use should have its header block set to:
+<blockquote><pre>
+00000000 00000000 00000000 00000001
+</pre></blockquote>
+
+The sample driver will demonstrate this. The additional bits in the block are reserved for future use.
+-->
+
+<p>
+
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+What is being validated when the user calls <i>ValidatePages</i>?
+</b>
+<p>
+
+<b>Answer:</b><br>
+There are several things that can be validated by this call. However, we are only going to be validating
+one aspect: the pad bytes. You need to walk each of the pages in the page list checking the pad bytes
+of each block (free or not). You don't need to check to see if any of the blocks are on the free list or not
+because you're just concerned about the padding. It's possible (in the future) to add more functionality 
+to the <i>ValidatePages</i> method, such as checking the signatures of the free blocks and unallocated blocks. 
+But for this assignment, checking the pad bytes	is sufficient to get an understanding of how you would 
+do heap verification/validation.
+</p><p>
+Also, if the debug flag is OFF or the size of the padding is 0, you will simply return 0 from the
+<i>ValidatePages</i> method without doing anything. This is simply because you can't check the pad bytes
+if they don't exist or if there are no signatures (in debug only) written to them.
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+If the user disables our allocator (by setting <i>UseCPPMemManager</i> to <b>true</b>), do we still throw
+an exception if the allocation from <b>new</b> fails?
+</b>
+<p>
+
+<b>Answer:</b><br>
+Yes. However, you won't throw a <tt>std::bad_alloc</tt> exception, since the user isn't expecting that. 
+You should catch that exception and throw an <i>OAException</i>, setting the appropriate error code (<tt>E_NO_MEMORY</tt>).
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+If the user disables our allocator (by setting <i>UseCPPMemManager</i> to <b>true</b>), what kinds of
+statistics can we still track?
+</b>
+<p>
+
+<b>Answer:</b><br>
+Since all of the functionality of the object allocator is disabled, you won't be able to do much
+with debugging stuff. However, you can still keep counts of certain things. You can keep track of
+the number of free objects, the number of objects in use, and the most objects ever in use.
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+</p><hr>
+</li><li>
+<b>
+Question:<br>
+There seems to be a lot of functionality in the ObjectAllocator class. Do we need to implement
+everything to be able to submit the assignment?
+</b>
+<p>
+
+<b>Answer:</b><br>
+No. Unlike labs in previous semesters, assignments are not an all-or-nothing event. The only thing
+the submission server does is perform a quick "sanity check" by making sure that your code compiles.
+If it fails to compile, it will be rejected and you will receive an automatic 0. If it compiles, it
+will be accepted, and then your code will be executed and several tests will be run. This means that
+you can receive partial credit for it.
+</p><p>
+That said, like any program you write, work on the easier stuff first, and add more functionality
+<b>ONLY after the simple stuff is working and tested.</b> Here is some advice for this assignment
+(and all assignments, really):
+</p><ol start="0">
+	<li>Attend every lecture, pay attention, and take notes. All assignments are explained in detail
+		during the lectures.</li>
+		<p>
+	</p><li>Read any handouts, FAQs, diagrams, and other materials <i>before and during</i> implementation.
+		Almost every question you may have is probably answered there. Plus, it will save you a lot
+		of wasted time doing things either incorrectly, or doing things that you aren't required.</li>
+		<p>
+	</p><li>Implement all of the required public methods as <i>stubs</i> so that you can get the sample driver to compile.
+	Of course, if you run the program, nothing will happen. That's expected. You will get warnings about
+	unused parameters, and that is also expected. You may want to <i>temporarily</i> disable the
+	warnings-as-errors so that it will compile.</li>
+	<p>
+	</p><li>Fill-in the basic methods. These are methods that will be required by every test. For example,
+		the constructor absolutely, positively, <b>MUST</b> be implemented correctly, or nothing else
+		will work. Other methods such as allocating a page and putting blocks on the free list
+		 will also need to be working as every test requires this. Once you have the basics, you should
+		 be able to pass the first simple tests.
+
+		<blockquote>
+The corollary to this is that you should delay the implementation of the advanced functionality
+until later (e.g. header blocks, validation, signatures). These can all be easily added once
+you have the base functionality. Also, it means that you can at least get partial credit by
+having the basics working.
+		</blockquote>
+	</li>
+	<li>Work on fleshing out the details. For example, once you can succesfully allocate and free blocks,
+		add the header blocks or pad bytes and test them. You will probably need the signatures as well,
+		but those are not difficult to add once you have the foundation for them.
+	</li>
+		
+</ol>
+<p>
+Other advice:
+</p><p>
+</p><ul>
+	<li>Start the assignment early! I don't expect anyone to finish it early, but if you start early,
+		all of the information from the lecture will still be fresh and you will be able to make progress.
+		Waiting a week or so after the lecture means that you've probably already forgotten most of what
+		was said and you'll spend too much time trying to "figure out" what you're supposed to do. That
+		is the #1 reason students do poorly on assignments: 
+		<b>They wait until they've forgotten the material and then they begin working on the assignment.</b>
+		<blockquote>
+			<p class="technote">
+		 In fact, I would do <i>at least</i> step #1 above within 24 hours of receiving
+		the assignment and try to do step #2 within 3 days.
+	</p>
+
+		</blockquote>
+		</li>
+
+		Also, by starting early, you can ask questions early instead of scrambling the day or two before,
+		trying to find someone to answer them.
+		<p>
+	</p><li>Make private helper functions! This is the #2 reason why students do poorly on non-trivial programs.
+		There are essentially 6 non-trivial methods for this assignment. That's it! My program has
+		10 helper functions and could probably use more. Remember Mead's law:
+		<i>"The complexity of the code is indirectly proportional to the number of functions in it."</i>
+		Imagine writing a game with only 6 functions!.
+		<blockquote>
+			<p class="technote">
+		 Remember, helper functions are not just about
+		code reuse; they are also for breaking down the problem into manageable pieces that
+		are easier to understand, test, and debug.
+	</p>
+		</blockquote>
+		<p>
+	</p></li><li>Document your code as you finish and test your functions. I know that a lot of programmers
+		don't want to document their code as they go because it's still in a state of flux. But,
+		once you've got it done, document it. This way, you can still get all of the credit for
+		partially-working code if you don't have all of the other functionality done.
+	</li>
+	<p>
+	</p><li>There is plenty of room for partial credit on the assignments. Don't wait until you've 
+		implemented all of the functionality to upload your assignment. As soon as you pass a few tests,
+		upload the partial working, clean, documented code. This will mean that, if you don't finish
+		everything (for whatever reason), you won't get a 0. Getting  30, or 40 points is much
+		better than getting a 0.</li>
+	<p>
+		</p><li>While you are developing your program, run with Valgrind or Dr. Memory <b>at all times.</b>
+			This will make sure that you are fixing your bugs as you go. There are 2 major reasons why
+			this is very desirable:
+			<p>
+			</p><ol>
+				<li>If you wait until near the submission deadline to check for memory bugs,
+					you may find that you have too many to fix before the deadline. Fix your bugs
+					as you create them!</li>
+					<p>
+				</p><li>You may be getting strange output when testing your code. Then, you waste hours
+					trying to figure out what the problem is only to discover you had some kind of 
+					memory overwrite that is causing all of the problems. Had you fixed that problem
+					when you created it, you wouldn't have wasted all that time.
+				</li>
+	</ol></li></ul>
+<p>
+<b>
+Bottom line: This assignment is very doable in the time allotted <b>IF</b> you follow this
+advice. (I've had <strike>hundreds</strike> thousands of students that will prove this statement to be true.)</b>
+
+</p></li></ol>
+
+
+
+<blockquote><pre></pre></blockquote>
+
+<!-- ************************************************************************************************ -->
+<!-- ************************************************************************************************ -->
+<hr>
+
+<br><br>
+
+
+
+
+<div>
+    <div class="vtResetstyles">
+    <div id="vtoverlay" class="vtoverlay vthidden w3-animate-right
+    w3-container">
+    <div class="vtmain vthidden" id="vtmain">
+      <div class="vtcontactus">
+          <a id="linktest" href="https://www.virustotal.com/">
+            <img class="vtlogo-popup" style=" width: 32px; 
+            height: 32px;" src="CS280-FAQ1_files/vt-logo.svg">
+          </a>
+          <a href="https://www.virustotal.com/">VT4Browsers
+          </a>
+      </div>
+      <span id="vtclose"><strong>X</strong></span>
+      <div class="vttextpopup vthidden" id="statustext">
+        <div class="vtscanstatus" id="vtscanstatus"></div>
+        <div class="vtprogress vthidden" id="vtprogress"></div>
+        <br id="brfile">
+        <div class="vtscanstatus" id="vtscanfilelink"></div>
+      </div>
+      <div class="vttextpopup vthidden" id="widgettext">
+        <div id="vtwidgetError"></div>
+      </div>
+    </div>
+    </div>
+    </div>
+    <div id="vt-augment-container" class="vtzindex vt-augment drawer" style="background: rgb(49, 61, 90);"></div></div><span class="vttooltiptext vthidden">&nbsp;Click to open VirusTotal report&nbsp;<br>with VT Augment</span><style></style></body></html>

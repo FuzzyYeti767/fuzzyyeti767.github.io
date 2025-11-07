@@ -1,0 +1,394 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="ObjectAllocator.h_files/new.css">
+<title>ObjectAllocator.h.html</title>
+<style>
+  .vt-augment {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .vt-augment.drawer {
+    display: none;
+    width: 700px;
+    background: white;
+    border: 1px solid #e6e6e6;
+    text-align: left;
+    z-index: 102;
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    box-shadow: -4px 5px 8px -3px rgba(17, 17, 17, .16);
+    animation: slideToRight 0.5s 1 forwards;
+    transform: translateX(100vw);
+  }
+  .vt-augment.drawer[opened] {
+    display: flex;
+    animation: slideFromRight 0.2s 1 forwards;
+  }
+  .vt-augment > .spinner {
+    position: absolute;
+    z-index: 199;
+    top: calc(50% - 50px);
+    left: calc(50% - 50px);
+    border: 8px solid rgba(0, 0, 0, 0.2);
+    border-left-color: white;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1.2s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes slideFromRight {
+    0% {
+      transform: translateX(100vw);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  @keyframes slideToRight {
+    100% {
+      transform: translateX(100vw);
+      display: none;
+    }
+  }
+  @media screen and (max-width: 700px) {
+    .vt-augment.drawer {
+      width: 100%;
+    }
+  }
+</style></head>
+
+<body>
+
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/2021/summer/cs280/project1-objectallocator/driver-sample.cpp.html">driver-sample.cpp</a><br>
+
+
+<pre class="sourcecode"><code>
+<font color="#003399"><i>//---------------------------------------------------------------------------</i></font>
+<font color="990099">#ifndef OBJECTALLOCATORH</font>
+<font color="990099">#define OBJECTALLOCATORH</font>
+<font color="#003399"><i>//---------------------------------------------------------------------------</i></font>
+
+<font color="990099">#include &lt;string&gt;</font>
+
+<font color="#003399"><i>// If the client doesn't specify these:</i></font>
+<b>static</b> <b>const</b> <b>int</b> DEFAULT_OBJECTS_PER_PAGE = 4;  
+<b>static</b> <b>const</b> <b>int</b> DEFAULT_MAX_PAGES = 3;
+
+<font color="#003399"><i>/*!
+  Exception class
+*/</i></font>
+<b>class</b> OAException
+{
+  <b>public</b>:
+    <font color="#003399"><i>/*!
+      Possible exception codes
+    */</i></font>
+    <b>enum</b> OA_EXCEPTION 
+    {
+      E_NO_MEMORY,      <font color="#003399"><i>//!&lt; out of physical memory (operator new fails)</i></font>
+      E_NO_PAGES,       <font color="#003399"><i>//!&lt; out of logical memory (max pages has been reached)</i></font>
+      E_BAD_BOUNDARY,   <font color="#003399"><i>//!&lt; block address is on a page, but not on any block-boundary</i></font>
+      E_MULTIPLE_FREE,  <font color="#003399"><i>//!&lt; block has already been freed</i></font>
+      E_CORRUPTED_BLOCK <font color="#003399"><i>//!&lt; block has been corrupted (pad bytes have been overwritten)</i></font>
+    };
+
+    <font color="#003399"><i>/*!
+      Constructor
+
+      \param ErrCode
+        One of the 5 error codes listed above
+
+      \param Message
+        A message returned by the what method.
+    */</i></font>
+    OAException(OA_EXCEPTION ErrCode, <b>const</b> std::string&amp; Message) : error_code_(ErrCode), message_(Message) {};
+
+    <font color="#003399"><i>/*!
+      Destructor
+    */</i></font>
+    <b>virtual</b> ~OAException() {
+    }
+
+    <font color="#003399"><i>/*!
+      Retrieves the error code
+
+      \return
+        One of the 5 error codes.
+    */</i></font>
+    OA_EXCEPTION code() <b>const</b> { 
+      <b>return</b> error_code_; 
+    }
+
+    <font color="#003399"><i>/*!
+      Retrieves a human-readable string regarding the error.
+
+      \return
+        The NUL-terminated string representing the error.
+    */</i></font>
+    <b>virtual</b> <b>const</b> <b>char</b> *what() <b>const</b> {
+      <b>return</b> message_.c_str();
+    }
+  <b>private</b>:  
+    OA_EXCEPTION error_code_; <font color="#003399"><i>//!&lt; The error code (one of the 5)</i></font>
+    std::string message_;     <font color="#003399"><i>//!&lt; The formatted string for the user.</i></font>
+};
+
+
+<font color="#003399"><i>/*!
+  ObjectAllocator configuration parameters
+*/</i></font>
+<b>struct</b> OAConfig
+{
+  <b>static</b> <b>const</b> size_t BASIC_HEADER_SIZE = <b>sizeof</b>(<b>unsigned</b>) + 1; <font color="#003399"><i>//!&lt; allocation number + flags</i></font>
+  <b>static</b> <b>const</b> size_t EXTERNAL_HEADER_SIZE = <b>sizeof</b>(<b>void</b>*);     <font color="#003399"><i>//!&lt; just a pointer</i></font>
+
+  <font color="#003399"><i>/*!
+    The different types of header blocks
+  */</i></font>
+  <b>enum</b> HBLOCK_TYPE{hbNone, hbBasic, hbExtended, hbExternal};
+
+  <font color="#003399"><i>/*!
+    POD that stores the information related to the header blocks.
+  */</i></font>
+  <b>struct</b> HeaderBlockInfo
+  {
+    HBLOCK_TYPE type_;  <font color="#003399"><i>//!&lt; Which of the 4 header types to use?</i></font>
+    size_t size_;       <font color="#003399"><i>//!&lt; The size of this header</i></font>
+    size_t additional_; <font color="#003399"><i>//!&lt; How many user-defined additional bytes</i></font>
+
+    <font color="#003399"><i>/*!
+      Constructor
+
+      \param type
+        The kind of header blocks in use.
+
+      \param additional
+        The number of user-defined additional bytes required.
+
+    */</i></font>
+    HeaderBlockInfo(HBLOCK_TYPE type = hbNone, <b>unsigned</b> additional = 0) : type_(type), size_(0), additional_(additional)
+    {
+      <b>if</b> (type_ == hbBasic)
+        size_ = BASIC_HEADER_SIZE;
+      <b>else</b> <b>if</b> (type_ == hbExtended) <font color="#003399"><i>// alloc # + use counter + flag byte + user-defined</i></font>
+        size_ = <b>sizeof</b>(<b>unsigned</b> <b>int</b>) + <b>sizeof</b>(<b>unsigned</b> <b>short</b>) + <b>sizeof</b>(<b>char</b>) + additional_;
+      <b>else</b> <b>if</b> (type_ == hbExternal)
+        size_ = EXTERNAL_HEADER_SIZE;
+    };
+  };
+
+  <font color="#003399"><i>/*!
+    Constructor
+
+    \param UseCPPMemManager
+      Determines whether or not to by-pass the OA.
+
+    \param ObjectsPerPage
+      Number of objects for each page of memory.
+
+    \param MaxPages
+      Maximum number of pages before throwing an exception. A value
+      of 0 means unlimited.
+
+    \param DebugOn
+      Is debugging code on or off?
+
+    \param PadBytes
+      The number of bytes to the left and right of a block to pad with.
+
+    \param HBInfo
+      Information about the header blocks used
+
+    \param Alignment
+      The number of bytes to align on.
+  */</i></font>
+  OAConfig(<b>bool</b> UseCPPMemManager = <b>false</b>,
+           <b>unsigned</b> ObjectsPerPage = DEFAULT_OBJECTS_PER_PAGE, 
+           <b>unsigned</b> MaxPages = DEFAULT_MAX_PAGES, 
+           <b>bool</b> DebugOn = <b>false</b>, 
+           <b>unsigned</b> PadBytes = 0,
+           <b>const</b> HeaderBlockInfo &amp;HBInfo = HeaderBlockInfo(),
+           <b>unsigned</b> Alignment = 0) : UseCPPMemManager_(UseCPPMemManager),
+                                     ObjectsPerPage_(ObjectsPerPage), 
+                                     MaxPages_(MaxPages), 
+                                     DebugOn_(DebugOn), 
+                                     PadBytes_(PadBytes),
+                                     HBlockInfo_(HBInfo),
+                                     Alignment_(Alignment)
+  {
+    HBlockInfo_ = HBInfo;
+    LeftAlignSize_ = 0;  
+    InterAlignSize_ = 0;
+  }
+
+  <b>bool</b> UseCPPMemManager_;      <font color="#003399"><i>//!&lt; by-pass the functionality of the OA and use new/delete</i></font>
+  <b>unsigned</b> ObjectsPerPage_;    <font color="#003399"><i>//!&lt; number of objects on each page</i></font>
+  <b>unsigned</b> MaxPages_;          <font color="#003399"><i>//!&lt; maximum number of pages the OA can allocate (0=unlimited)</i></font>
+  <b>bool</b> DebugOn_;               <font color="#003399"><i>//!&lt; enable/disable debugging code (signatures, checks, etc.)</i></font>
+  <b>unsigned</b> PadBytes_;          <font color="#003399"><i>//!&lt; size of the left/right padding for each block</i></font>
+  HeaderBlockInfo HBlockInfo_; <font color="#003399"><i>//!&lt; info about the specific type of header blocks</i></font>
+  <b>unsigned</b> Alignment_;         <font color="#003399"><i>//!&lt; address alignment of each block</i></font>
+  <b>unsigned</b> LeftAlignSize_;     <font color="#003399"><i>//!&lt; number of alignment bytes required to align first block</i></font>
+  <b>unsigned</b> InterAlignSize_;    <font color="#003399"><i>//!&lt; number of alignment bytes required between remaining blocks</i></font>
+};
+
+
+<font color="#003399"><i>/*!
+  POD that holds the ObjectAllocator statistical info
+*/</i></font>
+<b>struct</b> OAStats
+{
+  <font color="#003399"><i>/*!
+    Constructor
+  */</i></font>
+  OAStats() : ObjectSize_(0), PageSize_(0), FreeObjects_(0), ObjectsInUse_(0), PagesInUse_(0),
+                  MostObjects_(0), Allocations_(0), Deallocations_(0) {};
+
+  size_t ObjectSize_;      <font color="#003399"><i>//!&lt; size of each object</i></font>
+  size_t PageSize_;        <font color="#003399"><i>//!&lt; size of a page including all headers, padding, etc.</i></font>
+  <b>unsigned</b> FreeObjects_;   <font color="#003399"><i>//!&lt; number of objects on the free list</i></font>
+  <b>unsigned</b> ObjectsInUse_;  <font color="#003399"><i>//!&lt; number of objects in use by client</i></font>
+  <b>unsigned</b> PagesInUse_;    <font color="#003399"><i>//!&lt; number of pages allocated</i></font>
+  <b>unsigned</b> MostObjects_;   <font color="#003399"><i>//!&lt; most objects in use by client at one time</i></font>
+  <b>unsigned</b> Allocations_;   <font color="#003399"><i>//!&lt; total requests to allocate memory</i></font>
+  <b>unsigned</b> Deallocations_; <font color="#003399"><i>//!&lt; total requests to free memory</i></font>
+};
+
+<font color="#003399"><i>/*!
+  This allows us to easily treat raw objects as nodes in a linked list
+*/</i></font>
+<b>struct</b> GenericObject
+{
+  GenericObject *Next; <font color="#003399"><i>//!&lt; The next object in the list</i></font>
+};
+
+<font color="#003399"><i>/*!
+  This is used with external headers
+*/</i></font>
+<b>struct</b> MemBlockInfo
+{
+  <b>bool</b> in_use;        <font color="#003399"><i>//!&lt; Is the block free or in use?</i></font>
+  <b>char</b> *label;        <font color="#003399"><i>//!&lt; A dynamically allocated NUL-terminated string</i></font>
+  <b>unsigned</b> alloc_num; <font color="#003399"><i>//!&lt; The allocation number (absolute count)</i></font>
+};
+
+<font color="#003399"><i>/*!
+  This class represents a custom memory manager
+*/</i></font>
+<b>class</b> ObjectAllocator
+{
+  <b>public</b>:
+      <font color="#003399"><i>// Defined by the client (pointer to a block, size of block)</i></font>
+    <b>typedef</b> <b>void</b> (*DUMPCALLBACK)(<b>const</b> <b>void</b> *, size_t);     <font color="#003399"><i>//!&lt; Callback function when dumping memory leaks</i></font>
+    <b>typedef</b> <b>void</b> (*VALIDATECALLBACK)(<b>const</b> <b>void</b> *, size_t); <font color="#003399"><i>//!&lt; Callback function when validating blocks</i></font>
+
+      <font color="#003399"><i>// Predefined values for memory signatures</i></font>
+    <b>static</b> <b>const</b> <b>unsigned</b> <b>char</b> UNALLOCATED_PATTERN = 0xAA; <font color="#003399"><i>//!&lt; New memory never given to the client</i></font>
+    <b>static</b> <b>const</b> <b>unsigned</b> <b>char</b> ALLOCATED_PATTERN =   0xBB; <font color="#003399"><i>//!&lt; Memory owned by the client</i></font>
+    <b>static</b> <b>const</b> <b>unsigned</b> <b>char</b> FREED_PATTERN =       0xCC; <font color="#003399"><i>//!&lt; Memory returned by the client</i></font>
+    <b>static</b> <b>const</b> <b>unsigned</b> <b>char</b> PAD_PATTERN =         0xDD; <font color="#003399"><i>//!&lt; Pad signature to detect buffer over/under flow</i></font>
+    <b>static</b> <b>const</b> <b>unsigned</b> <b>char</b> ALIGN_PATTERN =       0xEE; <font color="#003399"><i>//!&lt; For the alignment bytes</i></font>
+
+      <font color="#003399"><i>// Creates the ObjectManager per the specified values</i></font>
+      <font color="#003399"><i>// Throws an exception if the construction fails. (Memory allocation problem)</i></font>
+    ObjectAllocator(size_t ObjectSize, <b>const</b> OAConfig&amp; config);
+
+      <font color="#003399"><i>// Destroys the ObjectManager (never throws)</i></font>
+    ~ObjectAllocator();
+
+      <font color="#003399"><i>// Take an object from the free list and give it to the client (simulates new)</i></font>
+      <font color="#003399"><i>// Throws an exception if the object can't be allocated. (Memory allocation problem)</i></font>
+    <b>void</b> *Allocate(<b>const</b> <b>char</b> *label = 0);
+
+      <font color="#003399"><i>// Returns an object to the free list for the client (simulates delete)</i></font>
+      <font color="#003399"><i>// Throws an exception if the the object can't be freed. (Invalid object)</i></font>
+    <b>void</b> Free(<b>void</b> *Object);
+
+      <font color="#003399"><i>// Calls the callback fn for each block still in use</i></font>
+    <b>unsigned</b> DumpMemoryInUse(DUMPCALLBACK fn) <b>const</b>;
+
+      <font color="#003399"><i>// Calls the callback fn for each block that is potentially corrupted</i></font>
+    <b>unsigned</b> ValidatePages(VALIDATECALLBACK fn) <b>const</b>;
+
+      <font color="#003399"><i>// Frees all empty pages (extra credit)</i></font>
+    <b>unsigned</b> FreeEmptyPages();
+
+      <font color="#003399"><i>// Returns true if FreeEmptyPages and alignments are implemented</i></font>
+    <b>static</b> <b>bool</b> ImplementedExtraCredit();
+
+      <font color="#003399"><i>// Testing/Debugging/Statistic methods</i></font>
+    <b>void</b> SetDebugState(<b>bool</b> State);   <font color="#003399"><i>// true=enable, false=disable</i></font>
+    <b>const</b> <b>void</b> *GetFreeList() <b>const</b>;  <font color="#003399"><i>// returns a pointer to the internal free list</i></font>
+    <b>const</b> <b>void</b> *GetPageList() <b>const</b>;  <font color="#003399"><i>// returns a pointer to the internal page list</i></font>
+    OAConfig GetConfig() <b>const</b>;       <font color="#003399"><i>// returns the configuration parameters</i></font>
+    OAStats GetStats() <b>const</b>;         <font color="#003399"><i>// returns the statistics for the allocator</i></font>
+
+      <font color="#003399"><i>// Prevent copy construction and assignment</i></font>
+      <font color="#003399"><i>/*! 
+        Copy constructor
+
+        \param oa
+          The allocator to copy
+      */</i></font>
+    ObjectAllocator(<b>const</b> ObjectAllocator &amp;oa) = <b>delete</b>;  
+
+    <font color="#003399"><i>/*!
+      Copy-assignment operator
+
+      \param oa
+        The allocator to copy/assign
+
+      \return
+        A reference to the object (this)
+
+     */</i></font>          
+    ObjectAllocator &amp;<b>operator</b>=(<b>const</b> ObjectAllocator &amp;oa) = <b>delete</b>; 
+
+  <b>private</b>:
+      <font color="#003399"><i>// Some "suggested" members (only a suggestion!)</i></font>
+    GenericObject *PageList_; <font color="#003399"><i>//!&lt; the beginning of the list of pages</i></font>
+    GenericObject *FreeList_; <font color="#003399"><i>//!&lt; the beginning of the list of objects</i></font>
+
+    <font color="#003399"><i>// <b>LOTS</b> of other private stuff... </i></font>    
+};
+
+<font color="990099">#endif</font>
+</code></pre>
+
+
+
+
+<div>
+    <div class="vtResetstyles">
+    <div id="vtoverlay" class="vtoverlay vthidden w3-animate-right
+    w3-container">
+    <div class="vtmain vthidden" id="vtmain">
+      <div class="vtcontactus">
+          <a id="linktest" href="https://www.virustotal.com/">
+            <img class="vtlogo-popup" style=" width: 32px; 
+            height: 32px;" src="ObjectAllocator.h_files/vt-logo.svg">
+          </a>
+          <a href="https://www.virustotal.com/">VT4Browsers
+          </a>
+      </div>
+      <span id="vtclose"><strong>X</strong></span>
+      <div class="vttextpopup vthidden" id="statustext">
+        <div class="vtscanstatus" id="vtscanstatus"></div>
+        <div class="vtprogress vthidden" id="vtprogress"></div>
+        <br id="brfile">
+        <div class="vtscanstatus" id="vtscanfilelink"></div>
+      </div>
+      <div class="vttextpopup vthidden" id="widgettext">
+        <div id="vtwidgetError"></div>
+      </div>
+    </div>
+    </div>
+    </div>
+    <div id="vt-augment-container" class="vtzindex vt-augment drawer" style="background: rgb(49, 61, 90);"></div></div><span class="vttooltiptext vthidden">&nbsp;Click to open VirusTotal report&nbsp;<br>with VT Augment</span><style></style></body></html>

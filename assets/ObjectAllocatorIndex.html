@@ -1,0 +1,729 @@
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" type="text/css" href="ObjectAllocatorIndex_files/new.css">
+    <title>CS 280 - ObjectAllocator Index</title>
+    <style>
+      .vt-augment {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .vt-augment.drawer {
+        display: none;
+        width: 700px;
+        background: white;
+        border: 1px solid #e6e6e6;
+        text-align: left;
+        z-index: 102;
+        position: fixed;
+        right: 0;
+        top: 0;
+        height: 100vh;
+        box-shadow: -4px 5px 8px -3px rgba(17, 17, 17, 0.16);
+        animation: slideToRight 0.5s 1 forwards;
+        transform: translateX(100vw);
+      }
+      .vt-augment.drawer[opened] {
+        display: flex;
+        animation: slideFromRight 0.2s 1 forwards;
+      }
+      .vt-augment > .spinner {
+        position: absolute;
+        z-index: 199;
+        top: calc(50% - 50px);
+        left: calc(50% - 50px);
+        border: 8px solid rgba(0, 0, 0, 0.2);
+        border-left-color: white;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1.2s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes slideFromRight {
+        0% {
+          transform: translateX(100vw);
+        }
+        100% {
+          transform: translateX(0);
+        }
+      }
+      @keyframes slideToRight {
+        100% {
+          transform: translateX(100vw);
+          display: none;
+        }
+      }
+      @media screen and (max-width: 700px) {
+        .vt-augment.drawer {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <p class="SectionHeader">Phase 1: Object Allocator Diagrams (Handout)</p>
+
+    These are the diagrams that were discussed in class and they assume a 32-bit computer (4-byte pointers):
+
+    <ul>
+      <li><a href="ObjectAllocator-1.html">Diagram 1</a> Allocating the first page, building free list</li>
+      <li><a href="ObjectAllocator-2.html">Diagram 2</a> Completed free list, removing Objects for client</li>
+      <li><a href="ObjectAllocator-3.html">Diagram 3</a> All Objects removed, allocating second page</li>
+      <li><a href="ObjectAllocator-4.html">Diagram 4</a> Linking pages, rebuilding free list</li>
+      <li><a href="ObjectAllocator-5.html">Diagram 5</a> Second page of Objects exhausted, no more memory for pages</li>
+      <li><a href="ObjectAllocator-6.html">Diagram 6</a> Client starts freeing Objects:</li>
+      <li><a href="ObjectAllocator-7.html">Diagram 7</a> Freelist after client frees 4 Objects</li>
+    </ul>
+    <a href="ObjectAllocator-Diagrams.pdf">PDF File</a> of the diagrams above.
+
+    <p class="SectionHeader">Phase 2: More Details (These examples assume a 32-bit computer)</p>
+
+    <a href="ObjectAllocator-Details.pdf">PDF File</a> of the diagrams below.
+    <p>Key to the signatures:</p>
+    <blockquote>
+      <table cellspacing="0" cellpadding="2" border="1">
+        <tbody>
+          <tr>
+            <th>Signature</th>
+            <th>Meaning/Use</th>
+            <th>Owned by</th>
+          </tr>
+          <tr align="center">
+            <td>AA</td>
+            <td>Unallocated</td>
+            <td>ObjectAllocator</td>
+          </tr>
+          <tr align="center">
+            <td>BB</td>
+            <td>Allocated</td>
+            <td>Client/User</td>
+          </tr>
+          <tr align="center">
+            <td>CC</td>
+            <td>Free</td>
+            <td>ObjectAllocator</td>
+          </tr>
+          <tr align="center">
+            <td>DD</td>
+            <td>Pad bytes</td>
+            <td>ObjectAllocator</td>
+          </tr>
+          <tr align="center">
+            <td>EE</td>
+            <td>Alignment bytes</td>
+            <td>ObjectAllocator</td>
+          </tr>
+        </tbody>
+      </table>
+    </blockquote>
+    <p>
+      To see what Real-World<sup>™</sup> debuggers use, look
+      <a href="https://en.wikipedia.org/wiki/Magic_number_%28programming%29#Debug_values">here</a>.
+    </p>
+    <p>Key to the header blocks:</p>
+    <blockquote>
+      <table cellspacing="0" cellpadding="2" border="1">
+        <tbody>
+          <tr>
+            <th>Type</th>
+            <th>Meaning/Use</th>
+            <th>Size (bytes)</th>
+          </tr>
+          <tr align="center">
+            <td>None</td>
+            <td>No header blocks are present</td>
+            <td>0</td>
+          </tr>
+          <tr align="center">
+            <td>Basic</td>
+            <td>4-byte allocation number, 1-byte flags</td>
+            <td>5</td>
+          </tr>
+          <tr align="center">
+            <td>Extended</td>
+            <td>Basic + 2-byte use count + user-defined bytes</td>
+            <td>varies</td>
+          </tr>
+          <tr align="center">
+            <td>External</td>
+            <td>Pointer to external data structure</td>
+            <td>sizeof a pointer</td>
+          </tr>
+        </tbody>
+      </table>
+    </blockquote>
+    <p></p>
+    <p></p>
+    <hr width="90%">
+    <p><b>Example 1</b>: 16-byte data, no padding, no header blocks, no alignment, 3 objects per page.</p>
+    <blockquote>
+      <p>
+        <table cellspacing="0" cellpadding="2" border="1">
+          <tbody>
+            <tr>
+              <th>Field</th>
+              <th>Size</th>
+            </tr>
+            <tr>
+              <td>Next pointer</td>
+              <td>4 bytes</td>
+            </tr>
+            <tr>
+              <td>Padding</td>
+              <td>0 bytes (not used)</td>
+            </tr>
+            <tr>
+              <td>Header block</td>
+              <td>0 bytes (not used)</td>
+            </tr>
+            <tr>
+              <td>Data</td>
+              <td>16 bytes</td>
+            </tr>
+            <tr>
+              <td>Alignment</td>
+              <td>0/0 bytes (not used)</td>
+            </tr>
+            <tr>
+              <td>Page size</td>
+              <td>52 bytes</td>
+            </tr>
+          </tbody>
+        </table>
+      </p>
+      <p>
+        <img src="ObjectAllocatorIndex_files/ObjectAllocator-Details-1.png">
+      </p>
+      <p>Memory dump (wrapped at 32 bytes):</p>
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+ 00 00 00 00 <font color="blue">00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA <font color="blue">B4 3D 33 00</font> AA AA AA AA AA AA AA AA
+ AA AA AA AA <font color="blue">C4 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+</pre>
+
+      Wrapped at 16 bytes:
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+ 00 00 00 00 <font color="blue">00 00 00 00</font> AA AA AA AA AA AA AA AA
+ AA AA AA AA <font color="blue">B4 3D 33 00</font> AA AA AA AA AA AA AA AA
+ AA AA AA AA <font color="blue">C4 3D 33 00</font> AA AA AA AA AA AA AA AA
+ AA AA AA AA
+</pre>
+
+      <b>Note</b>: The data will naturally be aligned on 4-byte boundaries, due to the size of the data.
+    </blockquote>
+
+    <p></p>
+    <hr width="90%">
+    <p><b>Example 2</b>: 16-byte data, no padding, no header blocks, 8-byte alignment, 3 objects per page.</p>
+    <blockquote>
+      <table cellspacing="0" cellpadding="2" border="1">
+        <tbody>
+          <tr>
+            <th>Field</th>
+            <th>Size</th>
+          </tr>
+          <tr>
+            <td>Next pointer</td>
+            <td>4 bytes</td>
+          </tr>
+          <tr>
+            <td>Padding</td>
+            <td>0 bytes (not used)</td>
+          </tr>
+          <tr>
+            <td>Header block</td>
+            <td>0 bytes (not used)</td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>16 bytes</td>
+          </tr>
+          <tr>
+            <td>Alignment</td>
+            <td>4/0 bytes (left/interblock)</td>
+          </tr>
+          <tr>
+            <td>Page size</td>
+            <td>56 bytes</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <img src="ObjectAllocatorIndex_files/ObjectAllocator-Details-2.png">
+      </p>
+      <p>Memory dump (wrapped at 32 bytes):</p>
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+ 00 00 00 00 EE EE EE EE <font color="blue">00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA <font color="blue">B8 3D 33 00</font> AA AA AA AA
+ AA AA AA AA AA AA AA AA <font color="blue">C8 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+</pre>
+
+      Wrapped at 16 bytes:
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+ 00 00 00 00 EE EE EE EE <font color="blue">00 00 00 00</font> AA AA AA AA
+ AA AA AA AA AA AA AA AA <font color="blue">B8 3D 33 00</font> AA AA AA AA
+ AA AA AA AA AA AA AA AA <font color="blue">C8 3D 33 00</font> AA AA AA AA
+ AA AA AA AA AA AA AA AA
+</pre>
+
+      <p class="technote">
+        <b>Note</b>: Only the first block of data has alignment bytes. This is to ensure that the first block is aligned
+        on an 8-byte boundary. The remaining blocks have no need for extra alignment bytes because they are already
+        aligned on 8-byte boundaries. This is why there are two alignment fields in the <i>OAConfig</i> class:
+        <i>LeftAlignSize</i> and <i>InterAlignSize</i>.
+      </p>
+    </blockquote>
+
+    <p></p>
+    <hr width="90%">
+    <p>
+      <b>Example 3</b>: 16-byte data, 2-byte padding (left/right), no header blocks, 8-byte alignment, 3 objects per
+      page.
+    </p>
+    <blockquote>
+      <table cellspacing="0" cellpadding="2" border="1">
+        <tbody>
+          <tr>
+            <th>Field</th>
+            <th>Size</th>
+          </tr>
+          <tr>
+            <td>Next pointer</td>
+            <td>4 bytes</td>
+          </tr>
+          <tr>
+            <td>Padding</td>
+            <td>2 bytes</td>
+          </tr>
+          <tr>
+            <td>Header block</td>
+            <td>0 bytes (not used)</td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>16 bytes</td>
+          </tr>
+          <tr>
+            <td>Alignment</td>
+            <td>2/4 bytes (left/interblock)</td>
+          </tr>
+          <tr>
+            <td>Page size</td>
+            <td>74 bytes</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <img src="ObjectAllocatorIndex_files/ObjectAllocator-Details-3.png">
+      </p>
+      <p>Memory dump (wrapped at 32 bytes):</p>
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+ 00 00 00 00 EE EE DD DD <font color="blue">00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA DD DD EE EE EE EE DD DD
+ <font color="blue">B8 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA DD DD EE EE EE EE DD DD <font color="blue">D0 3D 33 00</font> AA AA AA AA
+ AA AA AA AA AA AA AA AA DD DD</pre>
+
+      Wrapped at 16 bytes:
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+ 00 00 00 00 EE EE DD DD <font color="blue">00 00 00 00</font> AA AA AA AA
+ AA AA AA AA AA AA AA AA DD DD EE EE EE EE DD DD
+ <font color="blue">B8 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD EE EE EE EE DD DD <font color="blue">D0 3D 33 00</font> AA AA AA AA
+ AA AA AA AA AA AA AA AA DD DD
+</pre>
+
+      <p class="technote">
+        <b>Note</b>: Both the <i>LeftAlignSize</i> and <i>InterAlignSize</i> values are non-zero. Also, each block has
+        its own left and right pad bytes. The pad bytes are <b>not</b> shared between the blocks.
+      </p>
+    </blockquote>
+
+    <!--
+      <p>
+      <hr width="90%">
+      <p>
+
+      <b>Example 4</b>: 16-byte data, 2-byte padding (left/right), header blocks (4 bytes), 16-byte alignment.
+      <blockquote>
+      <table cellspacing=0 cellpadding=2 border=1>
+      <tr><th>Field</th><th>Size</th></tr>
+      <tr><td>Next pointer</td><td>4 bytes</td></tr>
+      <tr><td>Padding</td><td>2 bytes</td></tr>
+      <tr><td>Header block</td><td>4 bytes</td></tr>
+      <tr><td>Data</td><td>16 bytes</td></tr>
+      <tr><td>Alignment</td><td>6/8 bytes (left/interblock)</td></tr>
+      <tr><td>Page size</td><td>98 bytes</td></tr>
+      </table>
+      <p>
+      <img src="ObjectAllocator-Details-4.png">
+      <p>
+
+      Memory dump (wrapped at 32 bytes):
+      <pre>
+        0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+       00 00 00 00 EE EE EE EE EE EE 00 00 00 00 DD DD <font color=blue>00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+       DD DD EE EE EE EE EE EE EE EE 00 00 00 00 DD DD <font color=blue>C0 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+       DD DD EE EE EE EE EE EE EE EE 00 00 00 00 DD DD <font color=blue>E0 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+       DD DD
+      </pre>
+
+      Wrapped at 16 bytes:
+      <pre>
+        0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+       00 00 00 00 EE EE EE EE EE EE 00 00 00 00 DD DD
+       <font color=blue>00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+       DD DD EE EE EE EE EE EE EE EE 00 00 00 00 DD DD
+       <font color=blue>C0 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+       DD DD EE EE EE EE EE EE EE EE 00 00 00 00 DD DD
+       <font color=blue>E0 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+       DD DD
+      </pre>
+
+      </blockquote>
+    -->
+
+    <p></p>
+    <hr width="90%">
+    <p>
+      <b>Example 4</b>: 16-byte data, 2-byte padding (left/right), basic header blocks (5 bytes), 16-byte alignment, 3
+      objects per page.
+    </p>
+    <blockquote>
+      <table cellspacing="0" cellpadding="2" border="1">
+        <tbody>
+          <tr>
+            <th>Field</th>
+            <th>Size</th>
+          </tr>
+          <tr>
+            <td>Next pointer</td>
+            <td>4 bytes</td>
+          </tr>
+          <tr>
+            <td>Padding</td>
+            <td>2 bytes</td>
+          </tr>
+          <tr>
+            <td>Basic header block</td>
+            <td>5 bytes</td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>16 bytes</td>
+          </tr>
+          <tr>
+            <td>Alignment</td>
+            <td>5/7 bytes (left/interblock)</td>
+          </tr>
+          <tr>
+            <td>Page size</td>
+            <td>98 bytes</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <img src="ObjectAllocatorIndex_files/ObjectAllocator-Details-4.png">
+      </p>
+      <p>Memory dump (wrapped at 32 bytes):</p>
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+ 00 00 00 00 EE EE EE EE EE 00 00 00 00 00 DD DD <font color="blue">00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD EE EE EE EE EE EE EE 00 00 00 00 00 DD DD <font color="blue">C0 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD EE EE EE EE EE EE EE 00 00 00 00 00 DD DD <font color="blue">E0 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD
+</pre>
+
+      Wrapped at 16 bytes:
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+ 00 00 00 00 EE EE EE EE EE 00 00 00 00 00 DD DD
+ <font color="blue">00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD EE EE EE EE EE EE EE 00 00 00 00 00 DD DD
+ <font color="blue">C0 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD EE EE EE EE EE EE EE 00 00 00 00 00 DD DD
+ <font color="blue">E0 3D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD
+</pre>
+
+      <b>Note</b>: Pay attention to the order of the alignment bytes, header block, and pad bytes. They are in that
+      order from left to right in front of the data. The alignment bytes must take the header block and pad bytes into
+      consideration.
+      <p>
+        <b>Question:</b> What is the size of the page? (Assumer 32-bit pointers)
+        <br>
+        <b>Answer:</b> It's the sum of all of the components. You are given all of the information in the constructor
+        (via the configuration parameter) to calculate the page size.
+      </p>
+      <blockquote>
+        <pre>  <font color="#003399"><i>// next page pointer + left alignment block (only the first block has left alignment)</i></font>
+PageSize = <b>sizeof</b>(<b>void</b> *) + LeftAlignSize; <font color="#003399"><i>// 4 + 5 = 9</i></font>
+
+  <font color="#003399"><i>// Each object has a header, left padding, the object itself, right padding</i></font>
+  <font color="#003399"><i>//   (The left and right padding blocks are the same size)</i></font>
+  <font color="#003399"><i>//   3 * (5 + 2 + 16 + 2) = 75</i></font>
+PageSize += ObjectsPerPage * (HeaderSize + LeftPadSize + ObjectSize + RightPadSize);
+
+  <font color="#003399"><i>// All but the first block have an inter-block alignment block</i></font>
+PageSize += (ObjectsPerPage - 1) * InterAlignSize; <font color="#003399"><i>// (3 - 1) * 7 = 14</i></font>
+</pre>
+      </blockquote>
+
+      Note that you are not given the alignment block sizes directly. You are given an alignment value, which is the
+      alignment requirements for each block. From that, you must calculate the left-alignment and inter-alignment sizes.
+      All of these calculations are done with simple <s>math</s> arithmetic as shown above.
+    </blockquote>
+
+    <p></p>
+    <hr width="90%">
+    <p>
+      <b>Example 5</b>: 16-byte data, 2-byte padding (left/right), extended header blocks with 1 additional byte (8
+      bytes), no alignment.
+    </p>
+    <blockquote>
+      <table cellspacing="0" cellpadding="2" border="1">
+        <tbody>
+          <tr>
+            <th>Field</th>
+            <th>Size</th>
+          </tr>
+          <tr>
+            <td>Next pointer</td>
+            <td>4 bytes</td>
+          </tr>
+          <tr>
+            <td>Padding</td>
+            <td>2 bytes</td>
+          </tr>
+          <tr>
+            <td>Extended header block</td>
+            <td>8 bytes</td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>16 bytes</td>
+          </tr>
+          <tr>
+            <td>Alignment</td>
+            <td>0/0 no alignment</td>
+          </tr>
+          <tr>
+            <td>Page size</td>
+            <td>88 bytes</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <img src="ObjectAllocatorIndex_files/ObjectAllocator-Details-5.png">
+      </p>
+      <p>Memory dump (wrapped at 32 bytes):</p>
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+ 00 00 00 00 00 00 00 00 00 00 00 00 DD DD <font color="blue">00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA DD DD
+ 00 00 00 00 00 00 00 00 DD DD <font color="blue">8E 4D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA DD DD 00 00 00 00
+ 00 00 00 00 DD DD <font color="blue">AA 4D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA DD DD
+</pre>
+
+      Wrapped at 16 bytes:
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+ 00 00 00 00 00 00 00 00 00 00 00 00 DD DD <font color="blue">00 00
+ 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA DD DD
+ 00 00 00 00 00 00 00 00 DD DD <font color="blue">8E 4D 33 00</font> AA AA
+ AA AA AA AA AA AA AA AA AA AA DD DD 00 00 00 00
+ 00 00 00 00 DD DD <font color="blue">AA 4D 33 00</font> AA AA AA AA AA AA
+ AA AA AA AA AA AA DD DD
+</pre>
+    </blockquote>
+
+    <p></p>
+    <hr width="90%">
+    <p>
+      <b>Example 6</b>: 16-byte data, 2-byte padding (left/right), external header blocks (4 bytes, 32-bit), 8-byte
+      alignment.
+    </p>
+    <blockquote>
+      <table cellspacing="0" cellpadding="2" border="1">
+        <tbody>
+          <tr>
+            <th>Field</th>
+            <th>Size</th>
+          </tr>
+          <tr>
+            <td>Next pointer</td>
+            <td>4 bytes</td>
+          </tr>
+          <tr>
+            <td>Padding</td>
+            <td>2 bytes</td>
+          </tr>
+          <tr>
+            <td>External header block</td>
+            <td>4 bytes</td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>16 bytes</td>
+          </tr>
+          <tr>
+            <td>Alignment</td>
+            <td>6/0 alignment</td>
+          </tr>
+          <tr>
+            <td>Page size</td>
+            <td>82 bytes</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <img src="ObjectAllocatorIndex_files/ObjectAllocator-Details-6.png">
+      </p>
+      <p>Memory dump (wrapped at 32 bytes):</p>
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+ 00 00 00 00 EE EE EE EE EE EE 00 00 00 00 DD DD <font color="blue">00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD 00 00 00 00 DD DD <font color="blue">90 4D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA DD DD 00 00 00 00 DD DD
+ <font color="blue">A8 4D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA DD DD
+</pre>
+
+      Wrapped at 16 bytes:
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+ 00 00 00 00 EE EE EE EE EE EE 00 00 00 00 DD DD
+ <font color="blue">00 00 00 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD 00 00 00 00 DD DD <font color="blue">90 4D 33 00</font> AA AA AA AA
+ AA AA AA AA AA AA AA AA DD DD 00 00 00 00 DD DD
+ <font color="blue">A8 4D 33 00</font> AA AA AA AA AA AA AA AA AA AA AA AA
+ DD DD</pre>
+    </blockquote>
+
+    <p></p>
+    <hr width="90%">
+    <p>
+      <b>Example 7</b>: 16-byte data, 2-byte padding (left/right), external header blocks (4 bytes, 32-bit), no
+      alignment.
+    </p>
+    <p>
+      This example shows the <font color="red"><b>dynamically-allocated structs</b></font> and
+      <font color="red"><b>dynamically-allocated strings</b></font> as well.
+    </p>
+    <blockquote>
+      <table cellspacing="0" cellpadding="2" border="1">
+        <tbody>
+          <tr>
+            <th>Field</th>
+            <th>Size</th>
+          </tr>
+          <tr>
+            <td>Next pointer</td>
+            <td>4 bytes</td>
+          </tr>
+          <tr>
+            <td>Padding</td>
+            <td>2 bytes</td>
+          </tr>
+          <tr>
+            <td>External header block</td>
+            <td>4 bytes</td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>16 bytes</td>
+          </tr>
+          <tr>
+            <td>Alignment</td>
+            <td>no alignment</td>
+          </tr>
+          <tr>
+            <td>Page size</td>
+            <td>76 bytes</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <img src="ObjectAllocatorIndex_files/ObjectAllocator-Details-7a.png">
+      </p>
+      <p>Memory dump (wrapped at 32 bytes):</p>
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+ 00 00 00 00 <font color="blue">40 4E 33 00</font> DD DD BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB DD DD <font color="blue">B8 4E 33 00</font>
+ DD DD BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB DD DD 00 00 00 00 DD DD CC CC CC CC CC CC
+ CC CC CC CC CC CC CC CC CC CC DD DD
+</pre>
+
+      Wrapped at 16 bytes:
+      <pre>  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+ 00 00 00 00 <font color="blue">40 4E 33 00</font> DD DD BB BB BB BB BB BB
+ BB BB BB BB BB BB BB BB BB BB DD DD <font color="blue">B8 4E 33 00</font>
+ DD DD BB BB BB BB BB BB BB BB BB BB BB BB BB BB
+ BB BB DD DD 00 00 00 00 DD DD CC CC CC CC CC CC
+ CC CC CC CC CC CC CC CC CC CC DD DD
+</pre>
+
+      The diagram above is the result of allocating all 3 blocks, then freeing the right-most block. The signatures
+      reflect this fact.
+      <p>
+        <b>Note</b>: The structs and the strings (labels) are dynamically allocated with <b>new</b>. Do not try and use
+        your ObjectAllocator to manage that memory.
+      </p>
+    </blockquote>
+
+    <!--
+      Label:
+       In use: 0
+      Alloc #: 0
+        Label: Second student
+       In use: 1
+      Alloc #: 2
+        Label: First student
+       In use: 1
+      Alloc #: 1
+    -->
+    <br>
+    <br>
+    <br>
+
+    <blockquote><pre></pre></blockquote>
+
+    <div>
+      <div class="vtResetstyles">
+        <div
+          id="vtoverlay"
+          class="
+            vtoverlay vthidden w3-animate-right
+            w3-container
+          "
+        >
+          <div class="vtmain vthidden" id="vtmain">
+            <div class="vtcontactus">
+              <a id="linktest" href="https://www.virustotal.com/">
+                <img
+                  class="vtlogo-popup"
+                  style="
+                    width: 32px;
+                    height: 32px;
+                  "
+                  src="ObjectAllocatorIndex_files/vt-logo.svg"
+                >
+              </a>
+              <a href="https://www.virustotal.com/">VT4Browsers </a>
+            </div>
+            <span id="vtclose"><strong>X</strong></span>
+            <div class="vttextpopup vthidden" id="statustext">
+              <div class="vtscanstatus" id="vtscanstatus"></div>
+              <div class="vtprogress vthidden" id="vtprogress"></div>
+              <br id="brfile">
+              <div class="vtscanstatus" id="vtscanfilelink"></div>
+            </div>
+            <div class="vttextpopup vthidden" id="widgettext">
+              <div id="vtwidgetError"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="vt-augment-container" class="vtzindex vt-augment drawer" style="background: rgb(49, 61, 90);"></div>
+    </div>
+    <span class="vttooltiptext vthidden"
+      >&nbsp;Click to open VirusTotal report&nbsp;<br>
+      with VT Augment</span
+    >
+    <style></style>
+  </body>
+</html>

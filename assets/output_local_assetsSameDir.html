@@ -1,0 +1,1084 @@
+<html><head>
+<meta content="text/html; charset=utf-8" http-equiv="content-type"/>
+<style>@media projection {
+
+.xxscreen {
+	display:none;
+	}
+
+.xxprojection {
+	display: block; 
+	padding:65px 200px 0px 24px;
+	page-break-after: always;
+	}
+
+xxbody    {
+	background:#47557b url(operashowbg.jpg) fixed;
+	padding:0;
+	margin:0;
+	font-family:'trebuchet ms',arial,sans-serif;
+	font-size:150%;
+	color:#fff;
+	}
+}
+
+
+ /*
+ http://www.w3schools.com/html/html_colornames.asp
+ */
+ 
+ .bootcode {background-color: lavender}
+ .errmsgs {background-color: turquoise}
+ .partbl {background-color: pink}
+ .magic {background-color: violet}
+ .hilighter {background-color: yellow}
+
+ .Warning
+{
+  margin-left: 0;
+  font-size : 12pt;
+  font-weight : bold;
+  color : white;
+  background-color: #FF0000; 
+  border-style: solid;
+  border-color: blue;
+  border-width: thin;
+  vertical-align: top;
+  padding-top: 3px;
+  padding-bottom : 3px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+ 
+/*
+ .blu {color:#0000FF; font-weight:bold}
+ .brn {color:#990000; font-weight:bold}
+ .grn {color:#006600; font-weight:bold}
+ .red {color:#FF0000; font-weight:bold}
+*/
+ 
+ .attrib 
+ {
+ 	 font-size:8px;
+ 	 color:#777777;
+ }
+ 
+.console {
+   font-family : "Monospace", monospace; 
+   font-size : 14;
+   font-weight : normal;
+   background-color : black; 
+   color : white;
+   margin-right : 20px; 
+   margin-left : 20px; 
+   xpadding : 5px 20px; 
+   padding-left : 5px;
+   padding-top : 5px;
+   padding-bottom : 5px;
+   border-width : 1px; 
+   border-style : outset; 
+   border-color : silver; 
+   white-space : pre;  
+}
+
+
+xxxTD {
+   font-family : "Arial", "Helvetica", Sans-serif; 
+}
+
+TT
+{
+	font-family : "Courier New";
+	font-size : 13pt;
+}
+
+.SectionHeader
+{
+  margin-left: 0;
+	font-size : 14pt;
+	font-weight : bold;
+  background-color: rgb(255,255,204);
+  border-style: solid;
+  border-color: black;
+  border-width: thin;
+	xvertical-align: top;
+	padding-top: 5px;
+	padding-bottom : 5px;
+	padding-left: 20px;
+	padding-right: 20px;
+}
+
+
+PRE.SourceCode2 {
+   background-color : #e0ffff; 
+   border-width : medium; 
+   border-style : outset; 
+   border-color : silver; 
+   white-space : pre;
+}
+
+PRE.SourceCode EM {
+   font-style : normal; 
+   color : #9933cc; 
+   white-space : pre;  
+}
+
+PRE.SourceCode {
+   font-family : "Courier", monospace; 
+   background-color : #ffffe0; 
+   margin-right : 20px; 
+   margin-left : 20px; 
+   padding : 5px 20px; 
+   border-width : medium; 
+   border-style : outset; 
+   border-color : silver; 
+   white-space : pre;  
+}
+
+P.chatuser {
+   font-weight : bold; 
+   color : #3366cc; 
+   vertical-align : top; 
+}
+
+P.chatquestionpresented {
+   font-weight : bold; 
+   background-color : #dddddd; 
+   vertical-align : top; 
+}
+
+P.chatpublicmsg {
+   font-weight : normal; 
+   vertical-align : top; 
+   padding : 0 0 20px; 
+}
+
+P.chateditor {
+   color : red; 
+   padding : 0 0 10px; 
+}
+
+P.chataction {
+   font-style : italic; 
+   vertical-align : top; 
+}
+
+P.TechNote {
+   font-weight : normal; 
+   background-color : #e0ffff; 
+   padding : 2px 5px; 
+   border-width : medium; 
+   border-style : outset; 
+   border-color : silver; 
+}
+
+H3 {
+   font-weight : bold; 
+   font-size : 11pt; 
+   line-height : 10pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+H2 {
+   font-weight : bold; 
+   font-size : 14pt; 
+   line-height : 14pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+H1 {
+   font-weight : bold; 
+   font-size : 18pt; 
+   line-height : 18pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+   padding : 10px 0 0; 
+}
+
+BODY {
+   background : #ffffff; 
+   margin-left : 20 px;
+   margin-right : 20 px;}
+
+B.Help {
+   color : white; 
+   background-color : gray; 
+}
+
+/*****************************************************************************/
+/*****************************************************************************/
+Ax:hover {
+   color : #cc3300; 
+}
+
+/* enable (remove the 'x') this to make links invisible */
+Ax {
+		color : #000000;
+		text-decoration : none;
+}
+
+/* Wikipedia links can be made to look like links or not */
+SPAN#wplinkcc a {
+	color: #000000;
+	text-decoration : none;
+	pointer-events: none;
+	style=z-index: 1; 
+	position: relative;	
+	rel: nofollow;
+	
+	/*font-family: arial;*/
+	/*font-size: 100%;*/
+}
+
+/*
+http://stackoverflow.com/questions/6727659/is-it-possible-to-make-an-html-anchor-tag-not-clickable-linkable-using-css
+This method just swaps a label for the link, depending on the styles set below.
+The URL is always there, but the label may cover it using positioning and z-order.
+*/
+
+/**** URLs are live and visible ****/
+SPAN#wpurl {
+	position: absolute;	
+	visibility: hidden; 
+}
+/**** END ****/
+
+
+/**** URLs look like text and are not clickable or followable ****/
+SPAN#wpurlx {
+	style=z-index: 1; 
+	position: absolute;	
+	text-decoration : none;
+	color: #000000;
+}
+
+.wplabelx {
+		text-decoration : none;
+}
+
+.wplinkx {
+	text-decoration : none;
+	visibility: hidden;
+}
+/**** END ****/
+
+/*****************************************************************************/
+/*****************************************************************************/
+
+.webDirectoryLink {
+   font-size : 0.8em; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #3366cc; 
+   text-decoration : underline; 
+}
+
+.webDirectoryCategoryLink {
+   font-size : 0.8em; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.webDirectoryCatHead {
+   font-size : 0.9em; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #ffffff; 
+   text-decoration : none; 
+}
+
+.vspace5 {
+   padding : 5px 0 0; 
+}
+
+.visibility {
+   font-weight : bold; 
+   font-size : 0.8em; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #ff0000; 
+   text-decoration : none; 
+}
+
+.tuser {
+   color : blue; 
+   background-color : white; 
+}
+
+.ttitle {
+   font-weight : bold; 
+   color : black; 
+   background-color : #dddddd; 
+}
+
+.tthis {
+   font-weight : bold; 
+   line-height : 1; 
+   color : white; 
+   background-color : red; 
+   vertical-align : top; 
+}
+
+.tother {
+   font-weight : bold; 
+   line-height : 1; 
+   color : white; 
+   background-color : blue; 
+   vertical-align : top; 
+}
+
+.tmine {
+   font-weight : bold; 
+   color : black; 
+   background-color : #c71585; 
+}
+
+.title3 {
+   font-weight : bold; 
+   font-size : 12pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.thi {
+   background-color : #dddddd; 
+}
+
+.textAdLink {
+   font-weight : bold; 
+   color : #ffffff; 
+   text-decoration : none; 
+}
+
+.textAdCell {
+   font-size : 0.8em; 
+}
+
+.searchCell {
+   font-weight : bold; 
+   font-size : 11px; 
+}
+
+.rightSidebarLink {
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.rightSidebarHeading {
+   font-weight : bold; 
+   font-size : 10pt; 
+   color : #ffffff; 
+   background : #3366cc; 
+}
+
+.rightSidebarCell {
+   font-weight : bold; 
+   font-size : 10pt; 
+   color : #000000; 
+   background : #dddddd; 
+}
+
+.presentLocation {
+   font-weight : bold; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.logoCell {
+   background : #000000; 
+}
+
+.logoBar {
+   background : #000000; 
+}
+
+.loginLinkCell {
+   font-weight : bold; 
+   font-size : 0.8em; 
+   background : #3366cc; 
+}
+
+.loginLink {
+   color : #ffffff; 
+   text-decoration : none; 
+}
+
+.loginStd {
+   text-align : right; 
+}
+
+.loginReq {
+   text-align : right; 
+   font-weight : bold; 
+   color : blue; 
+}
+
+.login_std {
+   text-align : right; 
+}
+
+.login_req {
+   text-align : right; 
+   font-weight : bold; 
+   color : blue; 
+}
+
+.locationLink {
+   color : #000000; 
+   text-decoration : underline; 
+}
+
+.localLinkCell {
+   font-size : 9pt; 
+   color : #ffffff; 
+   background : #3366cc; 
+}
+
+.localLink {
+   font-weight : bold; 
+   color : #ffffff; 
+   text-decoration : none; 
+}
+
+.leftSidebarText {
+   font-weight : normal; 
+   font-size : 9pt; 
+   color : #000000; 
+}
+
+.leftSidebarLink {
+   font-weight : bold; 
+   font-size : 10pt; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.leftSidebarHeading {
+   font-weight : bold; 
+   font-size : 12pt; 
+   color : #3366cc; 
+}
+
+.leftSidebarCell {
+   font-size : 0.8em; 
+   background : #dddddd; 
+}
+
+.heading3 {
+   font-weight : bold; 
+   font-size : 11pt; 
+   line-height : 10pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.heading2 {
+   font-weight : bold; 
+   font-size : 14pt; 
+   line-height : 14pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.heading1 {
+   font-weight : bold; 
+   font-size : 18pt; 
+   line-height : 18pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+   padding : 10px 0 0; 
+}
+
+.globalNavBar {
+   background : #dddddd; 
+}
+
+.globalLinkCell {
+   font-size : 0.8em; 
+   background : #dddddd; 
+}
+
+.globalLink {
+   font-weight : bold; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.fineprint {
+   font-weight : normal; 
+   font-size : 8pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.directoryStuff {
+   font-size : 0.8em; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+}
+
+.directoryLink {
+   font-size : 9pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.directoryCategory {
+   font-size : 10pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : underline; 
+}
+
+.date3 {
+   font-weight : normal; 
+   font-size : 9pt; 
+   line-height : 10pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+   margin-top : 3pt; 
+}
+
+.copyrightLink {
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.copyrightCell {
+   font-size : 7pt; 
+   background : #dddddd; 
+}
+
+.contentshortDescription {
+   font-weight : normal; 
+   font-size : 9pt; 
+   color : #000000; 
+}
+
+.contentTableCell {
+   font-size : 0.8em; 
+   background : #ffffff; 
+}
+
+.contentTable {
+   background : #ffffff; 
+}
+
+.contentStoryLink {
+   color : #3366cc; 
+}
+
+.contentStoryHeadingCell {
+   background : #dddddd; 
+}
+
+.contentStoryHeading {
+   font-weight : normal; 
+   font-size : 11pt; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.contentStoryByline {
+   font-style : italic; 
+   font-weight : normal; 
+   font-size : 9pt; 
+   color : #000000; 
+}
+
+.contentSectionHeading {
+   font-weight : bold; 
+   font-size : 12pt; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.contentRule {
+   background : #3366cc; 
+}
+
+.contentMoreLink {
+   font-weight : bold; 
+   color : #3366cc; 
+}
+
+.contentHat {
+   font-weight : bold; 
+   font-size : 10pt; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.contentDevNewsStoryHeading {
+   font-weight : normal; 
+   font-size : 10pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.contentArticleTypeIndex {
+   font-size : 0.7em; 
+   color : #3366cc; 
+}
+
+.bottomlink {
+   font-weight : normal; 
+   font-size : 10pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #3366cc; 
+   text-decoration : none; 
+}
+
+.body3 {
+   font-weight : normal; 
+   font-size : 10pt; 
+   line-height : 11pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+}
+
+.blueHeading2 {
+   font-weight : bold; 
+   font-size : 12pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #003399; 
+   text-decoration : none; 
+}
+
+.bigBlue {
+   font-weight : bold; 
+   font-size : 14pt; 
+   color : #013399; 
+   text-decoration : none; 
+}
+
+.abstract {
+   font-style : italic; 
+   font-weight : normal; 
+   font-size : 10pt; 
+   line-height : 11pt; 
+   font-family : "Arial", "Helvetica", Sans-serif; 
+   color : #000000; 
+   text-decoration : none; 
+   padding : 10px; 
+}
+/* new classes - added 01/11/01 rare medium */
+
+.whiteLink { font-size : 10pt; text-decoration : none; color : #ffffff; }
+
+.whiteLinkB { font-size : 10pt; font-weight : bold; text-decoration : none; color : #ffffff; }
+
+.whiteLinkSmall { font-size : 9pt; text-decoration : none; color : #ffffff; }
+.yellowLinkSmall { font-size : 9pt; font-weight : bold; text-decoration : none; color : #ffdf00; }
+.whiteLinkVerySmall { font-size : 8pt; text-decoration : none; color : #ffffff; }
+
+.newBody { font-weight : normal; font-size : 9pt; line-height : 11pt; font-family : "Arial", "Helvetica", Sans-serif; color : #000000; text-decoration : none; }
+
+.newTitle { font-weight : bold; font-size : 11pt; font-family : "Arial", "Helvetica", Sans-serif; color : #000000; text-decoration : none; }
+
+.newDate { font-weight : normal; font-size : 8pt; line-height : 10pt; font-family : "Arial", "Helvetica", Sans-serif; color : #000000; text-decoration : none; margin-top : 3pt; }
+
+.newHeading { font-weight : bold; font-size : 10pt; line-height : 10pt; font-family : "Arial", "Helvetica", Sans-serif; color : #000000; text-decoration : none; }
+
+.bigBlack { font-weight : bold; font-size : 14pt; font-family : "Arial", "Helvetica", Sans-serif; color : #000000; text-decoration : none; }</style>
+<title>CS 280 - Programming Assignment #1</title>
+<style>
+body {
+   background : #ffffff; 
+   margin-left : 40;
+   margin-right : 10;
+   background : url("../../../../../images/notebook.jpg");
+   }
+</style><style>
+  .vt-augment {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .vt-augment.drawer {
+    display: none;
+    width: 700px;
+    background: white;
+    border: 1px solid #e6e6e6;
+    text-align: left;
+    z-index: 102;
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    box-shadow: -4px 5px 8px -3px rgba(17, 17, 17, .16);
+    animation: slideToRight 0.5s 1 forwards;
+    transform: translateX(100vw);
+  }
+  .vt-augment.drawer[opened] {
+    display: flex;
+    animation: slideFromRight 0.2s 1 forwards;
+  }
+  .vt-augment > .spinner {
+    position: absolute;
+    z-index: 199;
+    top: calc(50% - 50px);
+    left: calc(50% - 50px);
+    border: 8px solid rgba(0, 0, 0, 0.2);
+    border-left-color: white;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1.2s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes slideFromRight {
+    0% {
+      transform: translateX(100vw);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  @keyframes slideToRight {
+    100% {
+      transform: translateX(100vw);
+      display: none;
+    }
+  }
+  @media screen and (max-width: 700px) {
+    .vt-augment.drawer {
+      width: 100%;
+    }
+  }
+</style></head>
+<body>
+<center>
+<h1>CS 280 - Programming Assignment #1</h1>
+(ObjectAllocator)
+</center>
+<!--********************************************************************************************-->
+<!--********************************************************************************************-->
+<!--********************************************************************************************-->
+<p class="SectionHeader">
+Information
+</p>
+<ul>
+<li><a href="./cs280-programming-assignment-object-allocator.pdf">Handout</a> 
+  You <b>MUST</b> read this before starting the assignment.</li>
+<li>Interface: <a href="./ObjectAllocatorIndex.html">HTML</a> <a href="./ObjectAllocatorIndex.html">Text</a>
+<!--
+  <blockquote>
+  <b>The Doxygen documentation has changed!</b> Make sure you understand that. There is a
+    Doxyfile posted on the main web page that you should use for this and all other
+    assignments.</li>
+    </blockquote>
+  -->
+</li><li>Sample driver program: <a href="./driver-sample.cpp.html">HTML</a> <a href="./driver-sample.cpp.html">Text</a>
+</li><li>Random number generator
+<ul>
+<li>Interface: <a href="./PRNG.h.html">HTML</a> <a href="./PRNG.h.html">Text</a>
+</li><li>Implementation: <a href="./PRNG.cpp.html">HTML</a> <a href="./PRNG.cpp.html">Text</a>
+</li></ul>
+</li><li>Sample command lines for compiling: 
+	
+<ul>
+<li>GNU g++: 
+<pre><b>g++</b> -o gnu driver-sample.cpp ObjectAllocator.cpp PRNG.cpp -O2 -Werror -Wall -Wextra -Wconversion <font color="blue"><b>-std=c++17</b></font> -pedantic
+</pre>
+
+Running under Valgrind in Linux, macOS (or whatever it's called this year), or WSL:
+<pre><b>valgrind</b> -q --leak-check=full --show-reachable=yes --tool=memcheck ./gnu 
+</pre>
+<!--
+<p>
+<li>Microsoft: (<font color="red"><b>Not required for grading</b></font>)
+<pre>
+<b>cl</b> -Fems driver-sample.cpp ObjectAllocator.cpp PRNG.cpp /EHsc /Oy- /Ob0 /MT /Zi /D_CRT_SECURE_NO_DEPRECATE
+</pre>
+To check your program for memory leaks and hidden bugs with Dr. Memory, you must make sure that these
+options are specified with Microsoft's compiler
+(<a href="http://drmemory.org/docs/page_prep.html">reference</a>):
+<pre>
+/Zi /MT /EHsc /Oy- /Ob0 
+</pre>
+Then running it like this:
+<pre>
+<b>drmemory</b> -batch -brief -- ms.exe
+</pre>
+If your program is clean, you should see all zeros for the output:
+
+<pre>
+~~Dr.M~~
+~~Dr.M~~ NO ERRORS FOUND:
+~~Dr.M~~       0 unique,     0 total unaddressable access(es)
+~~Dr.M~~       0 unique,     0 total uninitialized access(es)
+~~Dr.M~~       0 unique,     0 total invalid heap argument(s)
+~~Dr.M~~       0 unique,     0 total GDI usage error(s)
+~~Dr.M~~       0 unique,     0 total handle leak(s)
+~~Dr.M~~       0 unique,     0 total warning(s)
+~~Dr.M~~       0 unique,     0 total,      0 byte(s) of leak(s)
+~~Dr.M~~       0 unique,     0 total,      0 byte(s) of possible leak(s)
+</pre>
+
+If any errors are found, Dr. Memory will show them and tell you the filenames and line numbers
+in the call stack:
+<pre>
+~~Dr.M~~
+~~Dr.M~~ Error #1: UNADDRESSABLE ACCESS: writing 4 byte(s)
+~~Dr.M~~ # 0 replace_memset                      [d:\drmemory_package\drmemory\replace.c:182]
+~~Dr.M~~ # 1 ObjectAllocator::Free               [objectallocator.cpp:247]
+~~Dr.M~~ # 2 DoEmployees                         [driver.cpp:1206]
+~~Dr.M~~ # 3 ExecuteTest                         [driver.cpp:2245]
+~~Dr.M~~ # 4 main                                [driver.cpp:2304]
+~~Dr.M~~ Note: refers to 0 byte(s) beyond last valid byte in prior malloc
+~~Dr.M~~
+~~Dr.M~~ Error #2: UNADDRESSABLE ACCESS: writing 4 byte(s)
+~~Dr.M~~ # 0 ObjectAllocator::push_front               [objectallocator.cpp:617]
+~~Dr.M~~ # 1 ObjectAllocator::Free                     [objectallocator.cpp:251]
+~~Dr.M~~ # 2 DoEmployees                               [driver.cpp:1206]
+~~Dr.M~~ # 3 ExecuteTest                               [driver.cpp:2245]
+~~Dr.M~~ # 4 main                                      [driver.cpp:2304]
+~~Dr.M~~ Note: refers to 0 byte(s) beyond last valid byte in prior malloc
+~~Dr.M~~ WARNING: application exited with abnormal code 0xffffffff  
+</pre>
+
+-->
+</li></ul>
+</li><li>64-bit output:</li>
+<ul>
+<li>64-bit (LP64):
+     <a href="./output-sample-zeros-LP64.txt">Generic (no addresses)</a>  
+    </li>
+</ul>
+<li>64-bit output with extra credit:</li>
+<ul>
+<li>64-bit (LP64):
+     <a href="./output-sample-zeros-ec-LP64.txt">Generic (no addresses)</a>  
+   </li>
+</ul>
+<p>
+<!--
+<li>32-bit output:</li>
+  <ul>
+    <li>32-bit (ILP32):
+     <a href="output-sample-zeros-ILP32.txt">Generic (no addresses)</a> &nbsp;
+    </li>
+  </ul>
+<li>32-bit utput with extra credit:</li>
+  <ul>
+    <li>32-bit (ILP32):
+     <a href="output-sample-zeros-ec-ILP32.txt">Generic (no addresses)</a> &nbsp;
+   </li>
+  </ul>
+<p>
+-->
+</p><li><a href="./ObjectAllocatorIndex.html">Diagrams</a> to help you understand the implementation.
+</li><li><a href="./CS280-FAQ1.html">FAQ</a> for this assignment.
+<!--
+<li><a href="http://gcc.gnu.org/onlinedocs/libstdc++/manual/bk01pt08ch19s02.html">One Past the End</a> 
+	This is a refresher on the C/C++ concept of pointing/dereferencing an element "one past the end" of an array. 
+	Going more than one past the end is <b>undefined</b>. Don't do it. 
+-->
+<p>
+</p></li></ul>
+<!--********************************************************************************************-->
+<!--********************************************************************************************-->
+<!--********************************************************************************************-->
+<p class="SectionHeader">
+Other Criteria
+</p>
+<ul>
+<li>You must use <b>new</b> and <b>delete</b> to allocate/deallocate the pages.</li>
+<ul>
+<li>Do not use <tt><b>std::nothrow</b></tt> with <tt><b>new</b></tt>. (If you don't know what that is, you're probably not going to use it.)</li>
+<li>You must catch the exception (<tt><b>std::bad_alloc</b></tt>) that is thrown from <tt><b>new</b></tt>.</li>
+</ul>
+<li>You can't use any STL code in your implementation (with the exception of <tt><b>std::string</b></tt> for exception messages).
+<!--<li>You can use anything you want (STL, malloc, MFC, BCB, VB, Perl, Python, Ruby) to code a driver program to test your implementation.-->
+</li><li>You can't change the <b>public</b> interface at all. 
+</li><li>Given this struct:
+
+<blockquote><pre><b>struct</b> Student
+{
+  <b>int</b> Age;   
+  <b>float</b> GPA; 
+  <b>long</b> Year; 
+  <b>long</b> ID;   
+};
+</pre></blockquote>
+<b><tt>sizeof</tt></b><tt>(Student)</tt> returns:
+<blockquote>
+<pre> LLP64: 16
+  LP64: 24
+</pre>
+</blockquote>
+</li>
+<li>DO NOT assume that pointers, integers, and long integers are the same size. Doing so may cause the compiler
+  to emit warnings and can also lead to your program crashing.
+  See <a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/docs/sizes2.c.html">this</a> for a quick refresher.</li>
+<p>
+<!--
+<li>Adjusting for Microsoft's odd compiler:
+<blockquote><pre>
+<b>struct</b> Student
+{
+  <b>int</b> Age;   
+  <b>float</b> GPA; 
+  <b>long</b> Year; 
+  <b>long</b> ID;   
+};
+</pre></blockquote>
+
+<b><tt>sizeof</b>(Student)</tt> now returns:
+<blockquote>
+<pre>
+ LLP64: 24
+  LP64: 24
+</pre>
+</blockquote>
+
+</li>
+-->
+</p><li>Using the GenericObject structure. Assume that FreeList_ and PageList_ are each pointers to a
+  GenericObject:
+
+<blockquote><pre>GenericObject *PageList_; <font color="#003399"><i>//!&lt; the beginning of the list of pages</i></font>
+GenericObject *FreeList_; <font color="#003399"><i>//!&lt; the beginning of the list of objects</i></font>
+</pre></blockquote>
+
+Freeing a block by putting it back on the free list (at the front of the list):
+
+<blockquote><pre>  <font color="#003399"><i>// Put block on front of the free list. FreeList currently points to the</i></font>
+  <font color="#003399"><i>// front of the free list. block is an address of a block of memory that</i></font>
+  <font color="#003399"><i>// was used by the client, e.g. a Student object. When the client returns</i></font>
+  <font color="#003399"><i>// the block by calling Free(block), you would need to put the block</i></font>
+  <font color="#003399"><i>// at the front of the free list. The Free function takes a void pointer</i></font>
+  <font color="#003399"><i>// so it must be cast so that there is a next pointer.</i></font>
+GenericObject *temp = <b>reinterpret_cast</b>&lt;GenericObject *&gt;(block);
+temp-&gt;Next = FreeList_;
+FreeList_ = temp;
+</pre></blockquote>
+
+The code above would probably be in some kind of loop that would execute <i>X</i> times, where
+<i>X</i> is the number of objects (blocks) per page. Assuming that <i>block</i> is a simple pointer
+to a character, the next block would be something like:
+<blockquote><pre>block += size_of_object; <font color="#003399"><i>// Find the next block in the page</i></font>
+</pre></blockquote>
+
+and you would then put that on the front of the free list. Having helper functions will greatly simplify
+the work. If you look at this code while looking at the diagrams that I posted, you should get a
+better insight into how this should work.
+
+<blockquote><pre></pre></blockquote>
+<blockquote><pre></pre></blockquote>
+<blockquote><pre></pre></blockquote>
+<p>
+
+Walking the PageList_ and freeing all of the pages. Since each page was allocated as an array of
+characters, you have to cast it back so that it can be deleted properly. 
+
+</p><blockquote><pre><b>while</b> (PageList_)
+{
+  GenericObject *temp = PageList_-&gt;Next;
+  <b>delete</b> [] <b>reinterpret_cast</b>&lt;<b>char</b> *&gt;(PageList_);
+  PageList_ = temp;
+}
+</pre></blockquote>
+
+In your own programs, you can make your pagelist and freelist either GenericObject pointers or
+char pointers. When you're trying to access the Next member, you will have to cast a character
+pointer to a GenericObject pointer. When you're trying to do pointer arithmetic on the page,
+you will have to cast a GenericObject pointer to a character pointer.
+<p>
+In either situtation, you
+will require a cast, so it really doesn't matter which way you go. However, DO NOT use void pointers
+as you will then need to cast every operation on the pointer because you can't do much with
+a void pointer (i.e. you can't dereference it, you can't do pointer arithmetic, you can't delete
+it, etc.)
+
+</p><blockquote><pre></pre></blockquote>
+<blockquote><pre></pre></blockquote>
+<blockquote><pre></pre></blockquote>
+<blockquote><pre></pre></blockquote>
+<blockquote><pre></pre></blockquote>
+</li></ul>
+<!--********************************************************************************************-->
+<!--********************************************************************************************-->
+<!--********************************************************************************************-->
+<p class="SectionHeader">
+Exception Handling Examples</p>
+<p>
+Please note that these are <i>examples</i>! Your code will probably be different.
+</p><p>
+</p><pre class="sourcecode"><code>
+  <font color="#003399"><i>// Make sure this object hasn't been freed yet</i></font>
+<b>if</b> (is_on_freelist(anObject))
+  <b>throw</b> OAException(OAException::E_MULTIPLE_FREE, <font color="#9933CC">"FreeObject: Object has already been freed."</font>);
+
+
+  <font color="#003399"><i>// If new throws an exception, catch it, and throw our own type of exception</i></font>
+<b>char</b> *newpage;
+<b>try</b>
+{
+  newpage = <b>new</b> <b>char</b>[PageSize_];
+}
+<b>catch</b> (std::bad_alloc &amp;)
+{
+  <b>throw</b> OAException(OAException::E_NO_MEMORY, <font color="#9933CC">"allocate_new_page: No system memory available."</font>);
+}
+
+<b>if</b> ( <font color="#003399"><i>/* Object is on a valid page boundary */</i></font> )
+  <font color="#003399"><i>// put it on the free list</i></font>
+<b>else</b>
+  <b>throw</b> OAException(OAException::E_BAD_BOUNDARY, <font color="#9933CC">"validate_object: Object not on a boundary."</font>);
+
+
+</code></pre>
+<a href="https://distance3.sg.digipen.edu/2023sg-spring/pluginfile.php/54761/mod_resource/content/1/ObjectAllocator/azrael.digipen.edu/~mmead/www/Courses/2021/summer/cs280/project1-objectallocator/OATestGUI-pages.exe">Download the GUI executable</a> This is an older version (doesn't include all 
+of the header block functionality) that
+includes the more sophisticated "hex viewer" component on the Page list tab.
+<!--
+<p>
+<a href="OATestGUI-simple.exe">Newer version</a> This is the latest version, but uses a simpler component
+to dump the memory (much like the text driver). If you download the source above, this is the program
+is the result of building it.
+-->
+<br/><br/><br/><br/>
+<blockquote><pre></pre></blockquote>
+<div>
+<div class="vtResetstyles">
+<div class="vtoverlay vthidden w3-animate-right w3-container" id="vtoverlay">
+<div class="vtmain vthidden" id="vtmain">
+<div class="vtcontactus">
+<a href="https://www.virustotal.com/" id="linktest">
+<img class="vtlogo-popup" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iMzJweCIgaGVpZ2h0PSIyOXB4IiB2aWV3Qm94PSIwIDAgMzIgMjkiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8IS0tIEdlbmVyYXRvcjogU2tldGNoIDY0ICg5MzUzNykgLSBodHRwczovL3NrZXRjaC5jb20gLS0+CiAgICA8dGl0bGU+aWNvbi8gbG9nb3MvIFZpcnVzdG90YWwgLyBpc288L3RpdGxlPgogICAgPGRlc2M+Q3JlYXRlZCB3aXRoIFNrZXRjaC48L2Rlc2M+CiAgICA8ZyBpZD0iaWNvbi8tbG9nb3MvLVZpcnVzdG90YWwtLy1pc28iIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPgogICAgICAgIDxnIGlkPSJHcm91cC0xNCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMS4wMDAwMDAsIDEuMDAwMDAwKSIgZmlsbD0iIzM5NEVGRiI+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0yNy4xNjU3LDI0LjI2MTcgTDYuODYzNywyNC4yNjE3IEwxNy42MDg3LDEzLjU5NTcgTDYuODYzNywyLjkwNDcgTDI3LjE2NTcsMi45MDQ3IEwyNy4xNjU3LDI0LjI2MTcgWiBNLTAuMDAwMywtMC4wMDAzIEwxMy42MjI3LDEzLjU5NTcgTC0wLjAwMDMsMjcuMTY1NyBMMzAuMDk2NywyNy4xNjU3IEwzMC4wOTY3LC0wLjAwMDMgTC0wLjAwMDMsLTAuMDAwMyBaIiBpZD0iRmlsbC0xMiI+PC9wYXRoPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+" style=" width: 32px; 
+            height: 32px;"/>
+</a>
+<a href="https://www.virustotal.com/">VT4Browsers
+          </a>
+</div>
+<span id="vtclose"><strong>X</strong></span>
+<div class="vttextpopup vthidden" id="statustext">
+<div class="vtscanstatus" id="vtscanstatus"></div>
+<div class="vtprogress vthidden" id="vtprogress"></div>
+<br id="brfile"/>
+<div class="vtscanstatus" id="vtscanfilelink"></div>
+</div>
+<div class="vttextpopup vthidden" id="widgettext">
+<div id="vtwidgetError"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="vtzindex vt-augment drawer" id="vt-augment-container" style="background: rgb(49, 61, 90);"></div></div><span class="vttooltiptext vthidden"> Click to open VirusTotal report <br/>with VT Augment</span><style></style></body></html>
